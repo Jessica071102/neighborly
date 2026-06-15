@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
-import { LocateIcon } from '../components/Icons';
 import PhotoInput from '../components/PhotoInput';
 
 const CATEGORY_SUGGESTIONS = [
@@ -14,9 +13,6 @@ export default function CreateListingPage() {
   const [form, setForm] = useState({
     name: '', category: '', description: '', photoUrl: '', pricePerDay: 0,
   });
-  const [location, setLocation] = useState(null);
-  const [locLoading, setLocLoading] = useState(false);
-  const [locLabel, setLocLabel] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -24,23 +20,9 @@ export default function CreateListingPage() {
     return (e) => setForm({ ...form, [field]: e.target.value });
   }
 
-  function getLocation() {
-    if (!navigator.geolocation) { setError('Geolocation not supported'); return; }
-    setLocLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLocLabel(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
-        setLocLoading(false);
-      },
-      () => { setError('Could not get location.'); setLocLoading(false); }
-    );
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.name || !form.category) { setError('Name and category are required'); return; }
-    if (!location) { setError('Please set your location so neighbours can find this item'); return; }
     setError('');
     setLoading(true);
     try {
@@ -50,12 +32,15 @@ export default function CreateListingPage() {
         description: form.description || undefined,
         photoUrl: form.photoUrl || undefined,
         pricePerDay: parseFloat(form.pricePerDay) || 0,
-        lat: location.lat,
-        lng: location.lng,
       });
       navigate('/my-listings');
     } catch (err) {
-      setError(err.message);
+      // Backend returns 400 when the user hasn't set a home location yet
+      if (err.message.includes('home location')) {
+        setError('Please set your home location in your profile first. Your listing location is taken from there.');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -113,17 +98,11 @@ export default function CreateListingPage() {
           <p className="form-hint">Set to 0 for free lending. Agree on payment via chat.</p>
         </div>
 
-        <div className="form-group">
-          <label className="form-label">Item location *</label>
-          <button type="button"
-            className={`location-pill${location ? ' active' : ''}`}
-            onClick={getLocation} disabled={locLoading}
-          >
-            <LocateIcon size={14} />
-            {locLoading ? 'Detecting…' : location ? locLabel : 'Use my current location'}
-          </button>
-          <p className="form-hint">Used to calculate distance for searchers. Your exact coordinates are never shown.</p>
-        </div>
+        <p className="form-hint" style={{ marginBottom: 16 }}>
+          Your listing location is taken from your{' '}
+          <Link to="/profile/edit" style={{ color: 'var(--green)', fontWeight: 600 }}>profile home location</Link>.
+          Neighbours will see your neighbourhood, not your exact address.
+        </p>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
           <button type="submit" className="btn btn-primary" disabled={loading}>

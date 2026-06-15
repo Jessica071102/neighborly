@@ -4,21 +4,33 @@ const { requireAuth } = require('../../middleware/auth');
 
 const router = express.Router();
 
-// FR-02: Create an item listing
+// FR-02: Create an item listing — location is taken from the owner's profile
 router.post('/', requireAuth, async (req, res) => {
-  const { name, category, description, photoUrl, pricePerDay, lat, lng } = req.body;
+  try {
+    const { name, category, description, photoUrl, pricePerDay } = req.body;
 
-  if (!name || !category || lat == null || lng == null) {
-    return res.status(400).json({ error: 'name, category, lat and lng are required' });
+    if (!name || !category) {
+      return res.status(400).json({ error: 'name and category are required' });
+    }
+
+    // Pull the owner's home location from their profile (NFR-04)
+    const userResult = await pool.query('SELECT lat, lng FROM users WHERE id = $1', [req.user.id]);
+    const owner = userResult.rows[0];
+    if (!owner || owner.lat == null || owner.lng == null) {
+      return res.status(400).json({ error: 'Please set your home location in your profile before creating a listing.' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO items (owner_id, name, category, description, photo_url, price_per_day, status, lat, lng)
+       VALUES ($1, $2, $3, $4, $5, $6, 'available', $7, $8) RETURNING id`,
+      [req.user.id, name, category, description || null, photoUrl || null, pricePerDay || 0, owner.lat, owner.lng]
+    );
+
+    res.status(201).json({ id: result.rows[0].id });
+  } catch (err) {
+    console.error('POST /items error:', err);
+    res.status(500).json({ error: 'Failed to create listing' });
   }
-
-  const result = await pool.query(
-    `INSERT INTO items (owner_id, name, category, description, photo_url, price_per_day, status, lat, lng)
-     VALUES ($1, $2, $3, $4, $5, $6, 'available', $7, $8) RETURNING id`,
-    [req.user.id, name, category, description || null, photoUrl || null, pricePerDay || 0, lat, lng]
-  );
-
-  res.status(201).json({ id: result.rows[0].id });
 });
 
 // FR-09: My listings (owner-only fields, including precise coordinates)

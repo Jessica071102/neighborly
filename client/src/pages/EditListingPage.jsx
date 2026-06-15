@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
-import { LocateIcon } from '../components/Icons';
 import PhotoInput from '../components/PhotoInput';
 
 const CATEGORY_SUGGESTIONS = [
@@ -15,9 +14,6 @@ export default function EditListingPage() {
   const [form, setForm] = useState({
     name: '', category: '', description: '', photoUrl: '', pricePerDay: 0,
   });
-  const [location, setLocation] = useState(null);
-  const [locLoading, setLocLoading] = useState(false);
-  const [locLabel, setLocLabel] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -41,19 +37,6 @@ export default function EditListingPage() {
     return (e) => setForm({ ...form, [field]: e.target.value });
   }
 
-  function getLocation() {
-    if (!navigator.geolocation) { setError('Geolocation not supported'); return; }
-    setLocLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLocLabel(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
-        setLocLoading(false);
-      },
-      () => { setError('Could not get location.'); setLocLoading(false); }
-    );
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.name || !form.category) { setError('Name and category are required'); return; }
@@ -66,7 +49,6 @@ export default function EditListingPage() {
         description: form.description || undefined,
         photoUrl: form.photoUrl || undefined,
         pricePerDay: parseFloat(form.pricePerDay) || 0,
-        ...(location ? { lat: location.lat, lng: location.lng } : {}),
       });
       navigate('/my-listings');
     } catch (err) {
@@ -128,18 +110,6 @@ export default function EditListingPage() {
             <span className="price-input-suffix">/ day</span>
           </div>
           <p className="form-hint">Set to 0 for free lending.</p>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Update location (optional)</label>
-          <button type="button"
-            className={`location-pill${location ? ' active' : ''}`}
-            onClick={getLocation} disabled={locLoading}
-          >
-            <LocateIcon size={14} />
-            {locLoading ? 'Detecting…' : location ? locLabel : 'Update my location'}
-          </button>
-          <p className="form-hint">Leave blank to keep the current location.</p>
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>

@@ -40,7 +40,7 @@ router.get('/:id/profile', requireAuth, async (req, res) => {
 // Update own profile (bio, preferences, photo, display_name, neighborhood_area)
 router.put('/me', requireAuth, async (req, res) => {
   try {
-    const { displayName, neighborhoodArea, bio, preferences, photoUrl } = req.body;
+    const { displayName, neighborhoodArea, bio, preferences, photoUrl, lat, lng } = req.body;
 
     await pool.query(
       `UPDATE users SET
@@ -48,14 +48,18 @@ router.put('/me', requireAuth, async (req, res) => {
          neighborhood_area  = COALESCE($2, neighborhood_area),
          bio                = $3,
          preferences        = $4,
-         photo_url          = COALESCE($5, photo_url)
-       WHERE id = $6`,
+         photo_url          = COALESCE($5, photo_url),
+         lat                = COALESCE($6, lat),
+         lng                = COALESCE($7, lng)
+       WHERE id = $8`,
       [
         displayName || null,
         neighborhoodArea || null,
         bio ?? null,
         preferences ?? null,
         photoUrl || null,
+        lat ?? null,
+        lng ?? null,
         req.user.id,
       ]
     );
