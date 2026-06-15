@@ -1400,5 +1400,73 @@ input, textarea, select { font-family: inherit; }
 /* ── Requests page tab with url params support ── */
 .request-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 
-/* ── Notification mark-all via PUT /read-all needs route before /:id ── */
-/* (handled in backend ordering) */
+/* ── Mobile overrides ── */
+@media (max-width: 480px) {
+  /* Tighter container padding */
+  .container, .container-wide { padding: 16px 14px; }
+
+  /* Listing grid: single column on phones */
+  .listings-grid { grid-template-columns: 1fr; }
+
+  /* My listings row: wrap actions below info on small screens */
+  .my-listing-row { flex-wrap: wrap; }
+  .my-listing-row-actions { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
+
+  /* Tabs: smaller padding + allow scroll if needed */
+  .tab-btn { padding: 10px 12px; font-size: 13px; }
+  .tab-count { min-width: 16px; height: 16px; font-size: 10px; }
+
+  /* Photo input: stack button + URL field vertically */
+  .photo-input-actions { flex-direction: column; align-items: stretch; }
+  .photo-input-actions .btn { width: 100%; }
+
+  /* Price input: keep compact */
+  .price-input-prefix, .price-input-suffix { padding: 0 8px; font-size: 13px; }
+
+  /* Request card: tighter */
+  .request-card { padding: 14px; }
+  .request-card-actions { gap: 6px; }
+  .request-card-actions .btn { font-size: 12px; padding: 6px 10px; }
+
+  /* Profile card */
+  .profile-avatar { width: 60px; height: 60px; font-size: 20px; }
+  .profile-name { font-size: 20px; }
+
+  /* Sidebar stacks under content — already handled by grid breakpoint */
+  .item-detail-sidebar .sidebar-card { margin-bottom: 12px; }
+
+  /* Page headers */
+  .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .page-header .btn { align-self: flex-start; }
+
+  /* Auth card padding */
+  .auth-card { padding: 28px 20px; }
+
+  /* Pref chips wrap naturally */
+  .pref-chips { gap: 5px; }
+  .pref-chip { font-size: 11px; padding: 3px 8px; }
+
+  /* Onboarding steps stack */
+  .search-onboarding-steps { flex-direction: column; align-items: center; }
+  .search-onboarding-step { width: 100%; max-width: 280px; }
+
+  /* Days badges in active requests */
+  .days-badge { font-size: 11px; padding: 2px 6px; }
+
+  /* Role tags */
+  .role-tag { font-size: 10px; padding: 2px 6px; }
+
+  /* Invite card buttons stack */
+  .invite-card-btns { flex-direction: column; }
+  .invite-card-btns .btn { width: 100%; justify-content: center; }
+
+  /* Static pages */
+  .static-page { padding: 28px 16px 60px; }
+  .static-page h1 { font-size: 24px; }
+
+  /* Landing page feature grid: always 1 col on very small */
+  .landing-features-grid { grid-template-columns: 1fr; }
+
+  /* Bottom tabs: ensure labels stay visible */
+  .bottom-tab-label { font-size: 10px; }
+}

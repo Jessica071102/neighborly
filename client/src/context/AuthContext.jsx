@@ -30,7 +30,8 @@ export function AuthProvider({ children }) {
   function logout() {
     localStorage.removeItem('token');
     setUser(null);
-    window.location.href = '/login';
+    // ProtectedRoute will handle the <Navigate to="/login"> client-side;
+    // avoids a full-page reload which can 404 on Vercel without a rewrite rule.
   }
 
   return (

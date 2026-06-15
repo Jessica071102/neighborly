@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 
-function PhotoInput({ value, onChange }) {
+function PhotoInput({ value, onChange, round = false }) {
   const fileRef = useRef(null);
 
   function handleFile(e) {
@@ -15,14 +15,17 @@ function PhotoInput({ value, onChange }) {
     reader.readAsDataURL(file);
   }
 
-  const initials = '?';
-
   return (
     <div className="photo-input-wrap">
       {value ? (
-        <img src={value} alt="Profile" className="photo-input-preview photo-input-preview-round" />
+        <img
+          src={value} alt="Profile"
+          className={round ? 'photo-input-preview photo-input-preview-round' : 'photo-input-preview'}
+        />
       ) : (
-        <div className="photo-input-placeholder photo-input-placeholder-round">{initials}</div>
+        <div className={round ? 'photo-input-placeholder photo-input-placeholder-round' : 'photo-input-placeholder'}>
+          {round ? '?' : 'No photo yet'}
+        </div>
       )}
       <div className="photo-input-actions">
         <button type="button" className="btn btn-outline btn-sm" onClick={() => fileRef.current.click()}>
@@ -33,7 +36,7 @@ function PhotoInput({ value, onChange }) {
           type="url" className="form-input" placeholder="…or paste image URL"
           value={value?.startsWith('data:') ? '' : (value || '')}
           onChange={(e) => onChange(e.target.value)}
-          style={{ flex: 1 }}
+          style={{ flex: 1, minWidth: 0 }}
         />
       </div>
       <p className="form-hint">Upload a file (max 5 MB) or paste an image URL.</p>
@@ -45,6 +48,81 @@ const PREFERENCE_SUGGESTIONS = [
   'Pick up only', 'Can deliver nearby', 'Cash payment preferred',
   'Bank transfer only', 'Free to borrow', 'Weekends only', 'Weekdays only',
 ];
+
+function ProfileForm({ form, setForm, error, loading, onSubmit, isSetup }) {
+  const navigate = useNavigate();
+
+  function set(field) {
+    return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
+  }
+
+  function addPreference(pref) {
+    const current = form.preferences.trim();
+    if (current.includes(pref)) return;
+    const next = current ? `${current} · ${pref}` : pref;
+    setForm((f) => ({ ...f, preferences: next }));
+  }
+
+  return (
+    <form onSubmit={onSubmit}>
+      {error && <div className="error-box" style={{ marginBottom: 16 }}>{error}</div>}
+
+      <div className="form-group">
+        <label className="form-label">Profile photo</label>
+        <PhotoInput round value={form.photoUrl} onChange={(v) => setForm((f) => ({ ...f, photoUrl: v }))} />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Display name</label>
+        <input className="form-input" placeholder="How neighbours see you"
+          value={form.displayName} onChange={set('displayName')} />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Neighbourhood</label>
+        <input className="form-input" placeholder="e.g. Prenzlauer Berg"
+          value={form.neighborhoodArea} onChange={set('neighborhoodArea')} />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">About you</label>
+        <textarea
+          className="form-input form-textarea"
+          placeholder="A short bio — what do you do, what are you happy to lend?"
+          value={form.bio} onChange={set('bio')} rows={3}
+        />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Borrowing preferences</label>
+        <textarea
+          className="form-input form-textarea"
+          placeholder="e.g. Pick up only · Cash preferred · Weekends only"
+          value={form.preferences} onChange={set('preferences')} rows={2}
+        />
+        <div className="pref-chips">
+          {PREFERENCE_SUGGESTIONS.map((p) => (
+            <button key={p} type="button" className="pref-chip" onClick={() => addPreference(p)}>
+              + {p}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+        <button type="submit" className="btn btn-primary" disabled={loading}>
+          {loading ? 'Saving…' : isSetup ? 'Save and continue' : 'Save changes'}
+        </button>
+        <button
+          type="button" className="btn btn-ghost"
+          onClick={() => navigate(isSetup ? '/search' : '/profile')}
+        >
+          {isSetup ? 'Skip for now' : 'Cancel'}
+        </button>
+      </div>
+    </form>
+  );
+}
 
 export default function EditProfilePage({ isSetup = false }) {
   const { user, refreshUser } = useAuth();
@@ -59,17 +137,6 @@ export default function EditProfilePage({ isSetup = false }) {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  function set(field) {
-    return (e) => setForm({ ...form, [field]: e.target.value });
-  }
-
-  function addPreference(pref) {
-    const current = form.preferences.trim();
-    if (current.includes(pref)) return;
-    const next = current ? `${current} · ${pref}` : pref;
-    setForm({ ...form, preferences: next });
-  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -92,91 +159,40 @@ export default function EditProfilePage({ isSetup = false }) {
     }
   }
 
+  if (isSetup) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card" style={{ maxWidth: 480, width: '100%' }}>
+          <div className="auth-logo">Neighborly</div>
+          <h1 className="auth-title">Tell us about yourself</h1>
+          <p className="auth-subtitle" style={{ marginBottom: 24 }}>
+            Help your neighbours know who they're lending to. You can update this anytime.
+          </p>
+          <ProfileForm
+            form={form} setForm={setForm}
+            error={error} loading={loading}
+            onSubmit={handleSubmit} isSetup
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container" style={{ maxWidth: 560 }}>
-      {isSetup ? (
-        <div className="profile-setup-header">
-          <div className="auth-logo" style={{ fontSize: 22 }}>Neighborly</div>
-          <h1 className="page-title" style={{ marginBottom: 4 }}>Welcome! Tell us about yourself</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 28 }}>
-            This helps your neighbours know who they're lending to. You can update it anytime.
-          </p>
-        </div>
-      ) : (
-        <div style={{ marginBottom: 24 }}>
-          <h1 className="page-title" style={{ marginBottom: 4 }}>Edit profile</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-            Update your public profile and borrowing preferences.
-          </p>
-        </div>
-      )}
-
-      {error && <div className="error-box">{error}</div>}
-
-      <form onSubmit={handleSubmit} className="card">
-        <div className="form-group">
-          <label className="form-label">Profile photo</label>
-          <PhotoInput value={form.photoUrl} onChange={(v) => setForm({ ...form, photoUrl: v })} />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Display name</label>
-          <input className="form-input" placeholder="How neighbours see you"
-            value={form.displayName} onChange={set('displayName')} />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Neighbourhood</label>
-          <input className="form-input" placeholder="e.g. Prenzlauer Berg"
-            value={form.neighborhoodArea} onChange={set('neighborhoodArea')} />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">About you</label>
-          <textarea
-            className="form-input form-textarea"
-            placeholder="A short bio — what do you do, what are you happy to lend?"
-            value={form.bio}
-            onChange={set('bio')}
-            rows={3}
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Borrowing preferences</label>
-          <textarea
-            className="form-input form-textarea"
-            placeholder="e.g. Pick up only · Cash preferred · Weekends only"
-            value={form.preferences}
-            onChange={set('preferences')}
-            rows={2}
-          />
-          <div className="pref-chips">
-            {PREFERENCE_SUGGESTIONS.map((p) => (
-              <button
-                key={p} type="button"
-                className="pref-chip"
-                onClick={() => addPreference(p)}
-              >
-                + {p}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Saving…' : isSetup ? 'Save and continue' : 'Save changes'}
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => navigate(isSetup ? '/search' : '/profile')}
-          >
-            {isSetup ? 'Skip for now' : 'Cancel'}
-          </button>
-        </div>
-      </form>
+      <div style={{ marginBottom: 24 }}>
+        <h1 className="page-title" style={{ marginBottom: 4 }}>Edit profile</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+          Update your public profile and borrowing preferences.
+        </p>
+      </div>
+      <div className="card">
+        <ProfileForm
+          form={form} setForm={setForm}
+          error={error} loading={loading}
+          onSubmit={handleSubmit} isSetup={false}
+        />
+      </div>
     </div>
   );
 }
