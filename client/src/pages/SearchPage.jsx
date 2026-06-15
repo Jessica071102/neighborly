@@ -24,16 +24,28 @@ const userIcon = L.divIcon({
   iconAnchor: [7, 7],
 });
 
+const SESSION_KEY = 'neighborly_search';
+
+function loadSession() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)) || {}; } catch { return {}; }
+}
+
 export default function SearchPage() {
-  const [query, setQuery] = useState('');
-  const [radius, setRadius] = useState(2);
-  const [userPos, setUserPos] = useState(null);
+  const saved = loadSession();
+  const [query, setQuery] = useState(saved.query ?? '');
+  const [radius, setRadius] = useState(saved.radius ?? 2);
+  const [userPos, setUserPos] = useState(saved.userPos ?? null);
   const [locError, setLocError] = useState('');
   const [locLoading, setLocLoading] = useState(false);
   const [items, setItems] = useState([]);
   const [searching, setSearching] = useState(false);
-  const [view, setView] = useState('list'); // 'list' | 'map'
+  const [view, setView] = useState(saved.view ?? 'list');
   const [searched, setSearched] = useState(false);
+
+  // Persist settings whenever they change
+  useEffect(() => {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ query, radius, userPos, view }));
+  }, [query, radius, userPos, view]);
 
   const runSearch = useCallback(async (pos, q, r) => {
     if (!pos) return;
