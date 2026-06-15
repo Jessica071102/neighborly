@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { BellIcon } from '../components/Icons';
+import { BellIcon, TrashIcon } from '../components/Icons';
 
 const TYPE_LABELS = {
   new_request:      'New borrow request',
@@ -51,7 +51,6 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     load();
-    // Mark everything as read as soon as the user opens the page
     api.put('/notifications/read-all', {}).catch(() => {});
   }, []);
 
@@ -61,6 +60,19 @@ export default function NotificationsPage() {
       setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, is_read: 1 } : x));
     }
     navigate(notifDestination(n));
+  }
+
+  async function handleDelete(e, id) {
+    e.stopPropagation();
+    await api.delete(`/notifications/${id}`).catch(() => {});
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    window.dispatchEvent(new CustomEvent('notif-refresh'));
+  }
+
+  async function clearAll() {
+    await api.delete('/notifications').catch(() => {});
+    setNotifications([]);
+    window.dispatchEvent(new CustomEvent('notif-refresh'));
   }
 
   async function markAllRead() {
@@ -77,8 +89,13 @@ export default function NotificationsPage() {
           <h1 className="page-title">Notifications</h1>
           {unreadCount > 0 && <p className="page-subtitle">{unreadCount} unread</p>}
         </div>
-        {unreadCount > 0 && (
-          <button className="btn btn-ghost btn-sm" onClick={markAllRead}>Mark all read</button>
+        {notifications.length > 0 && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            {unreadCount > 0 && (
+              <button className="btn btn-ghost btn-sm" onClick={markAllRead}>Mark all read</button>
+            )}
+            <button className="btn btn-danger btn-sm" onClick={clearAll}>Clear all</button>
+          </div>
         )}
       </div>
 
@@ -114,6 +131,13 @@ export default function NotificationsPage() {
                 </div>
                 <div className="notif-time">{timeAgo(n.created_at)}</div>
               </div>
+              <button
+                className="notif-delete-btn"
+                onClick={(e) => handleDelete(e, n.id)}
+                title="Delete notification"
+              >
+                <TrashIcon size={14} />
+              </button>
             </div>
           ))}
         </div>

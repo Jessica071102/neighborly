@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
-import { ChevronLeftIcon, SendIcon } from '../components/Icons';
+import { ChevronLeftIcon, SendIcon, TrashIcon } from '../components/Icons';
 
 function timeLabel(ts) {
   const d = new Date(ts);
@@ -20,9 +20,12 @@ export default function ChatPage() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [swipedId, setSwipedId] = useState(null);
   const socketRef = useRef(null);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
+  const swipeStartX = useRef(0);
+  const justSwipedRef = useRef(false);
 
   useEffect(() => {
     Promise.all([
@@ -32,8 +35,10 @@ export default function ChatPage() {
       const found = reqData.requests.find((r) => String(r.id) === String(requestId));
       setRequest(found || null);
       setMessages(msgData.messages);
-      // Mark any notifications for this chat as read so the badge clears
-      api.put(`/notifications/read-by-request/${requestId}`, {}).catch(() => {});
+      // Mark notifications for this chat as read and refresh the badge
+      api.put(`/notifications/read-by-request/${requestId}`, {})
+        .then(() => window.dispatchEvent(new CustomEvent('notif-refresh')))
+        .catch(() => {});
     }).catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [requestId]);
@@ -50,6 +55,10 @@ export default function ChatPage() {
         if (prev.some((m) => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
+    });
+
+    socket.on('message_deleted', ({ messageId }) => {
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
     });
 
     return () => socket.disconnect();
@@ -74,11 +83,35 @@ export default function ChatPage() {
     }
   }
 
+  function handleDelete(msgId) {
+    if (!socketRef.current) return;
+    socketRef.current.emit('delete_message', { messageId: msgId });
+    setMessages((prev) => prev.filter((m) => m.id !== msgId));
+    setSwipedId(null);
+  }
+
+  function onTouchStart(e, msgId) {
+    swipeStartX.current = e.touches[0].clientX;
+    // close any other open swipe
+    if (swipedId && swipedId !== msgId) setSwipedId(null);
+  }
+
+  function onTouchEnd(e, msgId) {
+    const delta = e.changedTouches[0].clientX - swipeStartX.current;
+    if (delta < -50) {
+      justSwipedRef.current = true;
+      setTimeout(() => { justSwipedRef.current = false; }, 300);
+      setSwipedId(msgId);
+    } else if (delta > 20) {
+      setSwipedId(null);
+    }
+  }
+
   if (loading) return <div className="loading"><div className="spinner" />Loading…</div>;
   if (error) return <div className="container"><div className="error-box">{error}</div></div>;
 
   return (
-    <div className="chat-wrap">
+    <div className="chat-wrap" onClick={() => { if (!justSwipedRef.current) setSwipedId(null); }}>
       <div className="chat-header">
         <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate('/requests')}>
           <ChevronLeftIcon size={18} />
@@ -107,18 +140,52 @@ export default function ChatPage() {
         )}
         {messages.map((msg) => {
           const mine = msg.sender_id === user?.id;
+          const swiped = swipedId === msg.id;
           return (
-            <div key={msg.id} className={`chat-message ${mine ? 'chat-message-mine' : 'chat-message-other'}`}>
-              {!mine && <div className="chat-sender">{msg.sender_name}</div>}
-              <div className="chat-bubble">{msg.content}</div>
-              <div className="chat-time">{timeLabel(msg.created_at)}</div>
+            <div
+              key={msg.id}
+              className={`chat-msg-wrap${mine ? ' mine' : ''}`}
+              onTouchStart={mine ? (e) => { e.stopPropagation(); onTouchStart(e, msg.id); } : undefined}
+              onTouchEnd={mine ? (e) => { e.stopPropagation(); onTouchEnd(e, msg.id); } : undefined}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className={`chat-message ${mine ? 'chat-message-mine' : 'chat-message-other'}`}
+                style={mine ? {
+                  transform: swiped ? 'translateX(-70px)' : 'translateX(0)',
+                  transition: 'transform 0.2s ease',
+                } : {}}
+              >
+                {!mine && <div className="chat-sender">{msg.sender_name}</div>}
+                <div className="chat-bubble">{msg.content}</div>
+                <div className="chat-time">{timeLabel(msg.created_at)}</div>
+              </div>
+
+              {mine && (
+                <>
+                  <button
+                    className={`msg-delete-btn${swiped ? ' visible' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(msg.id); }}
+                    title="Delete message"
+                  >
+                    <TrashIcon size={16} />
+                  </button>
+                  <button
+                    className="msg-delete-hover"
+                    onClick={(e) => { e.stopPropagation(); handleDelete(msg.id); }}
+                    title="Delete message"
+                  >
+                    <TrashIcon size={12} />
+                  </button>
+                </>
+              )}
             </div>
           );
         })}
         <div ref={bottomRef} />
       </div>
 
-      <div className="chat-input-area">
+      <div className="chat-input-area" onClick={(e) => e.stopPropagation()}>
         <textarea
           ref={textareaRef}
           className="chat-input"

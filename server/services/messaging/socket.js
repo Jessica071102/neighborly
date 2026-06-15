@@ -61,7 +61,16 @@ function registerMessagingSocket(io) {
       const recipientId = request.borrower_id === socket.user.id
         ? request.lender_id
         : request.borrower_id;
-      createNotification(recipientId, 'new_message', 'You have a new message.').catch(console.error);
+      createNotification(recipientId, 'new_message', 'You have a new message.', requestId).catch(console.error);
+    });
+
+    socket.on('delete_message', async ({ messageId }) => {
+      const msgResult = await pool.query('SELECT * FROM messages WHERE id = $1', [messageId]);
+      const msg = msgResult.rows[0];
+      if (!msg || msg.sender_id !== socket.user.id) return;
+
+      await pool.query('DELETE FROM messages WHERE id = $1', [messageId]);
+      io.to(`request:${msg.request_id}`).emit('message_deleted', { messageId });
     });
   });
 }

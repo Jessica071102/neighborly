@@ -16,12 +16,23 @@ function useUnreadCount() {
   const [count, setCount] = useState(0);
   const { user } = useAuth();
   const location = useLocation();
-  useEffect(() => {
-    if (!user) return;
+
+  function refresh() {
     api.get('/notifications')
       .then((d) => setCount(d.notifications.filter((n) => !n.is_read).length))
       .catch(() => {});
+  }
+
+  useEffect(() => {
+    if (!user) return;
+    refresh();
   }, [user, location.pathname]); // re-fetch on every navigation
+
+  useEffect(() => {
+    window.addEventListener('notif-refresh', refresh);
+    return () => window.removeEventListener('notif-refresh', refresh);
+  }, []);
+
   return count;
 }
 

@@ -40,6 +40,21 @@ router.put('/read-by-request/:requestId', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// FR-10: Delete a single notification (only owner can delete)
+router.delete('/:id', requireAuth, async (req, res) => {
+  await pool.query(
+    'DELETE FROM notifications WHERE id = $1 AND user_id = $2',
+    [req.params.id, req.user.id]
+  );
+  res.json({ success: true });
+});
+
+// FR-10: Delete all notifications for the current user
+router.delete('/', requireAuth, async (req, res) => {
+  await pool.query('DELETE FROM notifications WHERE user_id = $1', [req.user.id]);
+  res.json({ success: true });
+});
+
 // Internal helper -- imported directly by other services.
 // requestId is stored so the frontend can deep-link to the right page.
 async function createNotification(userId, type, content, requestId = null) {

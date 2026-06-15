@@ -1463,6 +1463,56 @@ input, textarea, select { font-family: inherit; }
 .cal-swatch--booked { background: #fee2e2; border: 1px solid #fca5a5; }
 .cal-swatch--sel { background: var(--green); }
 
+/* ── Swipe-to-delete chat messages ── */
+.chat-msg-wrap {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+}
+.chat-msg-wrap.mine { justify-content: flex-end; }
+
+.msg-delete-btn {
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 70px;
+  background: var(--error);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transform: translateX(70px);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+.msg-delete-btn.visible { transform: translateX(0); }
+.msg-delete-btn:hover { background: #b91c1c; }
+
+/* Desktop: small hover icon to the left of own messages */
+.msg-delete-hover {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  background: var(--error-bg);
+  border: 1px solid #FECACA;
+  color: var(--error);
+  border-radius: 50%;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+@media (hover: hover) {
+  .chat-msg-wrap.mine:hover .msg-delete-hover {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 /* ── Cost summary in request form ── */
 .cost-summary {
   background: var(--green-light); border: 1px solid var(--green-muted);
@@ -1484,9 +1534,27 @@ input, textarea, select { font-family: inherit; }
   transition: background 0.15s, color 0.15s;
 }
 
-/* ── Notification clickable ── */
+/* ── Notification clickable & delete ── */
 .notif-item-clickable { cursor: pointer; }
 .notif-item-clickable:hover { background: var(--bg); }
+.notif-delete-btn {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  opacity: 0;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.notif-item:hover .notif-delete-btn { opacity: 1; }
+.notif-delete-btn:hover { color: var(--error); background: var(--error-bg); }
+@media (hover: none) {
+  .notif-delete-btn { opacity: 0.5; }
+}
 
 /* ── User public profile page ── */
 .profile-avatar-img { display: block; margin: 0 auto 12px; }
