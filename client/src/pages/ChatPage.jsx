@@ -32,6 +32,8 @@ export default function ChatPage() {
       const found = reqData.requests.find((r) => String(r.id) === String(requestId));
       setRequest(found || null);
       setMessages(msgData.messages);
+      // Mark any notifications for this chat as read so the badge clears
+      api.put(`/notifications/read-by-request/${requestId}`, {}).catch(() => {});
     }).catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [requestId]);

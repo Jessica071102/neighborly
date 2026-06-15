@@ -31,6 +31,15 @@ router.put('/read-all', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// FR-10: Mark all notifications for a specific request as read (called when opening a chat)
+router.put('/read-by-request/:requestId', requireAuth, async (req, res) => {
+  await pool.query(
+    'UPDATE notifications SET is_read = 1 WHERE user_id = $1 AND request_id = $2',
+    [req.user.id, req.params.requestId]
+  );
+  res.json({ success: true });
+});
+
 // Internal helper -- imported directly by other services.
 // requestId is stored so the frontend can deep-link to the right page.
 async function createNotification(userId, type, content, requestId = null) {

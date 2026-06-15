@@ -49,7 +49,11 @@ export default function NotificationsPage() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    // Mark everything as read as soon as the user opens the page
+    api.put('/notifications/read-all', {}).catch(() => {});
+  }, []);
 
   async function handleClick(n) {
     if (!n.is_read) {

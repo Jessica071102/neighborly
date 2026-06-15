@@ -15,12 +15,13 @@ const NAV_LINKS = [
 function useUnreadCount() {
   const [count, setCount] = useState(0);
   const { user } = useAuth();
+  const location = useLocation();
   useEffect(() => {
     if (!user) return;
     api.get('/notifications')
       .then((d) => setCount(d.notifications.filter((n) => !n.is_read).length))
       .catch(() => {});
-  }, [user]);
+  }, [user, location.pathname]); // re-fetch on every navigation
   return count;
 }
 
