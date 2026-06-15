@@ -3,7 +3,12 @@ import { useState, useMemo } from 'react';
 const DOW = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 function toStr(date) {
-  return date.toISOString().split('T')[0];
+  // Use LOCAL date parts, not UTC — toISOString() is UTC and causes a date
+  // offset in timezones east of UTC (e.g. Berlin UTC+2) that breaks addDays.
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function addDays(dateStr, n) {
