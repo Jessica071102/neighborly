@@ -38,7 +38,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!token) return;
-    const socket = io({ auth: { token } });
+    const socket = io(import.meta.env.VITE_API_BASE_URL || undefined, { auth: { token } });
     socketRef.current = socket;
 
     socket.emit('join', Number(requestId));
