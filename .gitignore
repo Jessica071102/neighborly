@@ -1,0 +1,5 @@
+node_modules/
+server/db/neighborly.db
+server/.env
+client/dist/
+.DS_Store
