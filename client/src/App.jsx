@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import SearchPage from './pages/SearchPage';
@@ -17,10 +18,11 @@ import ProfilePage from './pages/ProfilePage';
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      <Route path="/" element={<ProtectedRoute><Layout><SearchPage /></Layout></ProtectedRoute>} />
+      <Route path="/search" element={<ProtectedRoute><Layout><SearchPage /></Layout></ProtectedRoute>} />
       <Route path="/items/create" element={<ProtectedRoute><Layout><CreateListingPage /></Layout></ProtectedRoute>} />
       <Route path="/items/:id" element={<ProtectedRoute><Layout><ItemDetailPage /></Layout></ProtectedRoute>} />
       <Route path="/my-listings" element={<ProtectedRoute><Layout><MyListingsPage /></Layout></ProtectedRoute>} />

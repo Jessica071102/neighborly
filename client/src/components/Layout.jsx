@@ -7,7 +7,7 @@ import {
 } from './Icons';
 
 const NAV_LINKS = [
-  { to: '/', label: 'Search', Icon: SearchIcon, exact: true },
+  { to: '/search', label: 'Search', Icon: SearchIcon, exact: true },
   { to: '/my-listings', label: 'My Listings', Icon: ListIcon },
   { to: '/requests', label: 'Requests', Icon: InboxIcon },
 ];
