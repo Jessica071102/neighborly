@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
   const result = await pool.query(
     `SELECT
        items.id, items.name, items.category, items.description, items.photo_url,
-       items.status, items.lat, items.lng,
+       items.status, items.price_per_day, items.lat, items.lng,
        users.display_name AS owner_name, users.neighborhood_area AS owner_area
      FROM items
      JOIN users ON users.id = items.owner_id
