@@ -308,10 +308,12 @@ export default function RequestsPage() {
               <textarea
                 className="form-input form-textarea"
                 placeholder="Optional comment…"
-                style={{ minHeight: 60, marginBottom: 8 }}
+                style={{ minHeight: 60, marginBottom: 4 }}
                 value={reviewForms[r.id].comment}
                 onChange={(e) => setReviewField(r.id, 'comment', e.target.value)}
+                maxLength={500}
               />
+              <span className="char-count" style={{ marginBottom: 8 }}>{reviewForms[r.id].comment.length}/500</span>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-primary btn-sm" onClick={() => submitReview(r)} disabled={reviewForms[r.id].loading}>
                   {reviewForms[r.id].loading ? 'Submitting…' : 'Submit review'}

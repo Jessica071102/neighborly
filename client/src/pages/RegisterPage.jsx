@@ -63,22 +63,22 @@ export default function RegisterPage() {
           <div className="form-group">
             <label className="form-label">Display name</label>
             <input className="form-input" placeholder="How neighbors see you"
-              value={form.displayName} onChange={set('displayName')} required />
+              value={form.displayName} onChange={set('displayName')} required maxLength={50} />
           </div>
           <div className="form-group">
             <label className="form-label">Email</label>
             <input type="email" className="form-input" placeholder="you@example.com"
-              value={form.email} onChange={set('email')} required />
+              value={form.email} onChange={set('email')} required maxLength={254} />
           </div>
           <div className="form-group">
             <label className="form-label">Password</label>
             <input type="password" className="form-input" placeholder="At least 8 characters"
-              value={form.password} onChange={set('password')} required minLength={8} />
+              value={form.password} onChange={set('password')} required minLength={8} maxLength={128} />
           </div>
           <div className="form-group">
             <label className="form-label">Neighborhood (optional)</label>
             <input className="form-input" placeholder="e.g. Prenzlauer Berg"
-              value={form.neighborhoodArea} onChange={set('neighborhoodArea')} />
+              value={form.neighborhoodArea} onChange={set('neighborhoodArea')} maxLength={80} />
           </div>
           <div className="form-group">
             <label className="form-label">Your location (optional)</label>

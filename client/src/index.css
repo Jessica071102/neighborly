@@ -1369,6 +1369,32 @@ input, textarea, select { font-family: inherit; }
   background: #fed7aa; color: #92400e; border-radius: 12px; margin: 2px;
 }
 
+/* ── Character counter ── */
+.char-count {
+  display: block;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+/* ── Text overflow protection ── */
+/* Prevent any long unbroken string from busting out of its container */
+.card, .sidebar-card, .chat-bubble, .listing-card,
+.item-detail-desc, .owner-profile-link {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Single-line truncation for names/titles in compact contexts */
+.listing-card-title,
+.owner-profile-link > div > div:first-child,
+.chat-header-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Date range calendar ── */
 .cal {
   background: var(--surface);

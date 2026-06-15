@@ -125,6 +125,7 @@ export default function ChatPage() {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKey}
           rows={1}
+          maxLength={1000}
         />
         <button
           className="chat-send-btn"
