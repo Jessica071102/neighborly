@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../../db/db');
+const pool = require('../../db/db');
 
 const router = express.Router();
 
@@ -24,7 +24,7 @@ function distanceKm(lat1, lng1, lat2, lng2) {
 //
 // NFR-04: results never include the lender's precise lat/lng -- only the
 // computed distanceKm and the lender's neighborhood_area.
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { lat, lng, q, radiusKm } = req.query;
 
   if (lat == null || lng == null) {
@@ -33,23 +33,25 @@ router.get('/', (req, res) => {
 
   const userLat = parseFloat(lat);
   const userLng = parseFloat(lng);
-  const radius = radiusKm ? parseFloat(radiusKm) : 1; // default 1km radius
+  const radius = radiusKm ? parseFloat(radiusKm) : 1;
 
   if (Number.isNaN(userLat) || Number.isNaN(userLng) || Number.isNaN(radius)) {
     return res.status(400).json({ error: 'lat, lng and radiusKm must be numbers' });
   }
 
-  let items = db.prepare(`
-    SELECT
-      items.id, items.name, items.category, items.description, items.photo_url,
-      items.status, items.lat, items.lng,
-      users.display_name AS owner_name, users.neighborhood_area AS owner_area
-    FROM items
-    JOIN users ON users.id = items.owner_id
-    WHERE items.status = 'available'
-  `).all();
+  const result = await pool.query(
+    `SELECT
+       items.id, items.name, items.category, items.description, items.photo_url,
+       items.status, items.lat, items.lng,
+       users.display_name AS owner_name, users.neighborhood_area AS owner_area
+     FROM items
+     JOIN users ON users.id = items.owner_id
+     WHERE items.status = 'available'`
+  );
 
-  // Keyword filter (FR-03: users search by item, location is a filter)
+  let items = result.rows;
+
+  // Keyword filter (FR-03)
   if (q) {
     const keyword = q.toLowerCase();
     items = items.filter((item) =>

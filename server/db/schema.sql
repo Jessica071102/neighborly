@@ -1,75 +1,75 @@
--- Neighborly database schema
+-- Neighborly database schema (PostgreSQL)
 -- Tables map to the Functional Requirements in the Project Charter.
 
 -- FR-01: Users
 CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   display_name TEXT NOT NULL,
   photo_url TEXT,
   neighborhood_area TEXT,        -- human-readable area, e.g. "Prenzlauer Berg"
-  lat REAL,                       -- precise location, NEVER exposed to other users (NFR-04)
-  lng REAL,
-  created_at TEXT DEFAULT (datetime('now'))
+  lat FLOAT8,                    -- precise location, NEVER exposed to other users (NFR-04)
+  lng FLOAT8,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- FR-02, FR-04, FR-09: Item listings
 -- NOTE (NFR-06): `category` is intentionally free text, not an enum/constraint,
 -- so new categories can be added without schema or code changes.
 CREATE TABLE IF NOT EXISTS items (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   owner_id INTEGER NOT NULL REFERENCES users(id),
   name TEXT NOT NULL,
   category TEXT NOT NULL,
   description TEXT,
   photo_url TEXT,
   status TEXT NOT NULL DEFAULT 'available', -- 'available' | 'unavailable'
-  lat REAL NOT NULL,
-  lng REAL NOT NULL,
-  created_at TEXT DEFAULT (datetime('now'))
+  lat FLOAT8 NOT NULL,
+  lng FLOAT8 NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- FR-05, FR-06: Borrow requests
 CREATE TABLE IF NOT EXISTS borrow_requests (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   item_id INTEGER NOT NULL REFERENCES items(id),
   borrower_id INTEGER NOT NULL REFERENCES users(id),
   lender_id INTEGER NOT NULL REFERENCES users(id),
   start_date TEXT NOT NULL,
   end_date TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending', -- pending | accepted | declined | completed
-  created_at TEXT DEFAULT (datetime('now'))
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- FR-07: Chat messages (one thread per borrow_request)
 CREATE TABLE IF NOT EXISTS messages (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   request_id INTEGER NOT NULL REFERENCES borrow_requests(id),
   sender_id INTEGER NOT NULL REFERENCES users(id),
   content TEXT NOT NULL,
-  created_at TEXT DEFAULT (datetime('now'))
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- FR-08: Ratings & reviews
 CREATE TABLE IF NOT EXISTS reviews (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   request_id INTEGER NOT NULL REFERENCES borrow_requests(id),
   reviewer_id INTEGER NOT NULL REFERENCES users(id),
   reviewee_id INTEGER NOT NULL REFERENCES users(id),
   rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
   comment TEXT,
-  created_at TEXT DEFAULT (datetime('now'))
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- FR-10: Notifications
 CREATE TABLE IF NOT EXISTS notifications (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id),
   type TEXT NOT NULL,             -- e.g. 'new_request' | 'request_accepted' | 'request_declined' | 'new_message' | 'review_prompt'
   content TEXT NOT NULL,
   is_read INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT DEFAULT (datetime('now'))
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Indexes to support NFR-01 (search performance)

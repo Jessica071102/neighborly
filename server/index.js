@@ -1,9 +1,12 @@
 require('dotenv').config();
 
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
+const pool = require('./db/db');
 
 const authRoutes = require('./services/auth/routes');
 const listingsRoutes = require('./services/listings/routes');
@@ -39,6 +42,16 @@ const io = new Server(server, {
 registerMessagingSocket(io); // FR-07 (real-time)
 
 const PORT = process.env.PORT || 4000;
-server.listen(PORT, () => {
-  console.log(`Neighborly server running on http://localhost:${PORT}`);
+
+async function start() {
+  const schema = fs.readFileSync(path.join(__dirname, 'db/schema.sql'), 'utf-8');
+  await pool.query(schema);
+  server.listen(PORT, () => {
+    console.log(`Neighborly server running on http://localhost:${PORT}`);
+  });
+}
+
+start().catch(err => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });
