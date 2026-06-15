@@ -83,11 +83,19 @@ export default function ChatPage() {
     }
   }
 
-  function handleDelete(msgId) {
-    if (!socketRef.current) return;
-    socketRef.current.emit('delete_message', { messageId: msgId });
+  async function handleDelete(msgId) {
+    // Optimistic remove
     setMessages((prev) => prev.filter((m) => m.id !== msgId));
     setSwipedId(null);
+    try {
+      await api.delete(`/messages/${msgId}`);
+      // Notify the other participant's open chat via socket
+      socketRef.current?.emit('delete_message', { messageId: msgId });
+    } catch {
+      // Restore on failure by re-fetching
+      const data = await api.get(`/messages/${requestId}`).catch(() => null);
+      if (data) setMessages(data.messages);
+    }
   }
 
   function onTouchStart(e, msgId) {

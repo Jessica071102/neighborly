@@ -30,6 +30,22 @@ router.get('/:requestId', requireAuth, async (req, res) => {
   res.json({ messages: result.rows });
 });
 
+// FR-07: Delete a message (sender only).
+router.delete('/:messageId', requireAuth, async (req, res) => {
+  try {
+    const msgResult = await pool.query('SELECT * FROM messages WHERE id = $1', [req.params.messageId]);
+    const msg = msgResult.rows[0];
+    if (!msg) return res.status(404).json({ error: 'Message not found' });
+    if (msg.sender_id !== req.user.id) return res.status(403).json({ error: 'Not your message' });
+
+    await pool.query('DELETE FROM messages WHERE id = $1', [req.params.messageId]);
+    res.json({ success: true, requestId: msg.request_id });
+  } catch (err) {
+    console.error('DELETE /messages/:messageId', err);
+    res.status(500).json({ error: 'Failed to delete message' });
+  }
+});
+
 // FR-07: Send a message via REST (fallback for clients not using Socket.io).
 router.post('/:requestId', requireAuth, async (req, res) => {
   const { content } = req.body;
