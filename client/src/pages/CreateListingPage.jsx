@@ -1,48 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { LocateIcon } from '../components/Icons';
+import PhotoInput from '../components/PhotoInput';
 
 const CATEGORY_SUGGESTIONS = [
   'Tools', 'Electronics', 'Sports & Outdoor', 'Kitchen', 'Books',
   'Bikes & Scooters', 'Games', 'Camping', 'Cleaning', 'Other',
 ];
-
-function PhotoInput({ value, onChange }) {
-  const fileRef = useRef(null);
-
-  function handleFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5 MB'); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => onChange(ev.target.result);
-    reader.readAsDataURL(file);
-  }
-
-  return (
-    <div className="photo-input-wrap">
-      {value ? (
-        <img src={value} alt="Preview" className="photo-input-preview" />
-      ) : (
-        <div className="photo-input-placeholder">No photo yet</div>
-      )}
-      <div className="photo-input-actions">
-        <button type="button" className="btn btn-outline btn-sm" onClick={() => fileRef.current.click()}>
-          Upload photo
-        </button>
-        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
-        <input
-          type="url" className="form-input" placeholder="…or paste image URL"
-          value={value?.startsWith('data:') ? '' : (value || '')}
-          onChange={(e) => onChange(e.target.value)}
-          style={{ flex: 1 }}
-        />
-      </div>
-      <p className="form-hint">Upload a file (max 5 MB) or paste an image URL.</p>
-    </div>
-  );
-}
 
 export default function CreateListingPage() {
   const navigate = useNavigate();

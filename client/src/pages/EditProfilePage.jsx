@@ -1,48 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
-
-function PhotoInput({ value, onChange, round = false }) {
-  const fileRef = useRef(null);
-
-  function handleFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5 MB'); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => onChange(ev.target.result);
-    reader.readAsDataURL(file);
-  }
-
-  return (
-    <div className="photo-input-wrap">
-      {value ? (
-        <img
-          src={value} alt="Profile"
-          className={round ? 'photo-input-preview photo-input-preview-round' : 'photo-input-preview'}
-        />
-      ) : (
-        <div className={round ? 'photo-input-placeholder photo-input-placeholder-round' : 'photo-input-placeholder'}>
-          {round ? '?' : 'No photo yet'}
-        </div>
-      )}
-      <div className="photo-input-actions">
-        <button type="button" className="btn btn-outline btn-sm" onClick={() => fileRef.current.click()}>
-          Upload photo
-        </button>
-        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
-        <input
-          type="url" className="form-input" placeholder="…or paste image URL"
-          value={value?.startsWith('data:') ? '' : (value || '')}
-          onChange={(e) => onChange(e.target.value)}
-          style={{ flex: 1, minWidth: 0 }}
-        />
-      </div>
-      <p className="form-hint">Upload a file (max 5 MB) or paste an image URL.</p>
-    </div>
-  );
-}
+import PhotoInput from '../components/PhotoInput';
 
 const PREFERENCE_SUGGESTIONS = [
   'Pick up only', 'Can deliver nearby', 'Cash payment preferred',

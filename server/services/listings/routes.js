@@ -61,29 +61,34 @@ router.get('/:id', async (req, res) => {
 
 // FR-09: Edit a listing (owner only)
 router.put('/:id', requireAuth, async (req, res) => {
-  const itemResult = await pool.query('SELECT * FROM items WHERE id = $1', [req.params.id]);
-  const item = itemResult.rows[0];
-  if (!item) return res.status(404).json({ error: 'Item not found' });
-  if (item.owner_id !== req.user.id) return res.status(403).json({ error: 'Not your listing' });
+  try {
+    const itemResult = await pool.query('SELECT * FROM items WHERE id = $1', [req.params.id]);
+    const item = itemResult.rows[0];
+    if (!item) return res.status(404).json({ error: 'Item not found' });
+    if (item.owner_id !== req.user.id) return res.status(403).json({ error: 'Not your listing' });
 
-  const { name, category, description, photoUrl, pricePerDay, status, lat, lng } = req.body;
+    const { name, category, description, photoUrl, pricePerDay, status, lat, lng } = req.body;
 
-  await pool.query(
-    `UPDATE items SET
-       name          = COALESCE($1, name),
-       category      = COALESCE($2, category),
-       description   = COALESCE($3, description),
-       photo_url     = COALESCE($4, photo_url),
-       price_per_day = COALESCE($5, price_per_day),
-       status        = COALESCE($6, status),
-       lat           = COALESCE($7, lat),
-       lng           = COALESCE($8, lng)
-     WHERE id = $9`,
-    [name ?? null, category ?? null, description ?? null, photoUrl ?? null,
-     pricePerDay ?? null, status ?? null, lat ?? null, lng ?? null, req.params.id]
-  );
+    await pool.query(
+      `UPDATE items SET
+         name          = COALESCE($1, name),
+         category      = COALESCE($2, category),
+         description   = COALESCE($3, description),
+         photo_url     = COALESCE($4, photo_url),
+         price_per_day = COALESCE($5, price_per_day),
+         status        = COALESCE($6, status),
+         lat           = COALESCE($7, lat),
+         lng           = COALESCE($8, lng)
+       WHERE id = $9`,
+      [name ?? null, category ?? null, description ?? null, photoUrl ?? null,
+       pricePerDay ?? null, status ?? null, lat ?? null, lng ?? null, req.params.id]
+    );
 
-  res.json({ success: true });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PUT /items/:id error:', err);
+    res.status(500).json({ error: 'Failed to update listing' });
+  }
 });
 
 // FR-09: Delete a listing (owner only)

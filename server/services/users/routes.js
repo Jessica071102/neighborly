@@ -39,27 +39,32 @@ router.get('/:id/profile', requireAuth, async (req, res) => {
 
 // Update own profile (bio, preferences, photo, display_name, neighborhood_area)
 router.put('/me', requireAuth, async (req, res) => {
-  const { displayName, neighborhoodArea, bio, preferences, photoUrl } = req.body;
+  try {
+    const { displayName, neighborhoodArea, bio, preferences, photoUrl } = req.body;
 
-  await pool.query(
-    `UPDATE users SET
-       display_name       = COALESCE($1, display_name),
-       neighborhood_area  = COALESCE($2, neighborhood_area),
-       bio                = $3,
-       preferences        = $4,
-       photo_url          = COALESCE($5, photo_url)
-     WHERE id = $6`,
-    [
-      displayName || null,
-      neighborhoodArea || null,
-      bio ?? null,
-      preferences ?? null,
-      photoUrl || null,
-      req.user.id,
-    ]
-  );
+    await pool.query(
+      `UPDATE users SET
+         display_name       = COALESCE($1, display_name),
+         neighborhood_area  = COALESCE($2, neighborhood_area),
+         bio                = $3,
+         preferences        = $4,
+         photo_url          = COALESCE($5, photo_url)
+       WHERE id = $6`,
+      [
+        displayName || null,
+        neighborhoodArea || null,
+        bio ?? null,
+        preferences ?? null,
+        photoUrl || null,
+        req.user.id,
+      ]
+    );
 
-  res.json({ success: true });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PUT /users/me error:', err);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
 });
 
 module.exports = router;
