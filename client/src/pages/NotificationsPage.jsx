@@ -1,14 +1,26 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { BellIcon } from '../components/Icons';
 
 const TYPE_LABELS = {
-  new_request: 'New borrow request',
+  new_request:      'New borrow request',
   request_accepted: 'Request accepted',
   request_declined: 'Request declined',
-  new_message: 'New message',
-  review_prompt: 'Leave a review',
+  new_message:      'New message',
+  review_prompt:    'Leave a review',
 };
+
+function notifDestination(n) {
+  switch (n.type) {
+    case 'new_request':      return '/requests?tab=pending';
+    case 'request_accepted': return '/requests?tab=active';
+    case 'request_declined': return '/requests?tab=history';
+    case 'review_prompt':    return '/requests?tab=history';
+    case 'new_message':      return n.request_id ? `/chat/${n.request_id}` : '/requests';
+    default:                 return '/requests';
+  }
+}
 
 function timeAgo(ts) {
   const diff = Date.now() - new Date(ts).getTime();
@@ -21,6 +33,7 @@ function timeAgo(ts) {
 }
 
 export default function NotificationsPage() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,18 +51,16 @@ export default function NotificationsPage() {
 
   useEffect(() => { load(); }, []);
 
-  async function markRead(id) {
-    try {
-      await api.put(`/notifications/${id}/read`, {});
-      setNotifications((prev) =>
-        prev.map((n) => n.id === id ? { ...n, is_read: 1 } : n)
-      );
-    } catch {}
+  async function handleClick(n) {
+    if (!n.is_read) {
+      await api.put(`/notifications/${n.id}/read`, {}).catch(() => {});
+      setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, is_read: 1 } : x));
+    }
+    navigate(notifDestination(n));
   }
 
   async function markAllRead() {
-    const unread = notifications.filter((n) => !n.is_read);
-    await Promise.all(unread.map((n) => api.put(`/notifications/${n.id}/read`, {}).catch(() => {})));
+    await api.put('/notifications/read-all', {}).catch(() => {});
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })));
   }
 
@@ -60,14 +71,10 @@ export default function NotificationsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Notifications</h1>
-          {unreadCount > 0 && (
-            <p className="page-subtitle">{unreadCount} unread</p>
-          )}
+          {unreadCount > 0 && <p className="page-subtitle">{unreadCount} unread</p>}
         </div>
         {unreadCount > 0 && (
-          <button className="btn btn-ghost btn-sm" onClick={markAllRead}>
-            Mark all read
-          </button>
+          <button className="btn btn-ghost btn-sm" onClick={markAllRead}>Mark all read</button>
         )}
       </div>
 
@@ -87,8 +94,11 @@ export default function NotificationsPage() {
           {notifications.map((n) => (
             <div
               key={n.id}
-              className={`notif-item${!n.is_read ? ' unread' : ''}`}
-              onClick={() => !n.is_read && markRead(n.id)}
+              className={`notif-item${!n.is_read ? ' unread' : ''} notif-item-clickable`}
+              onClick={() => handleClick(n)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && handleClick(n)}
             >
               <div className={`notif-dot${n.is_read ? ' read' : ''}`} />
               <div className="notif-content">

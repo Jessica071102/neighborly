@@ -67,7 +67,7 @@ router.post('/login', async (req, res) => {
 // queries) -- this endpoint must never be used to look up other users.
 router.get('/me', requireAuth, async (req, res) => {
   const result = await pool.query(
-    'SELECT id, email, display_name, photo_url, neighborhood_area, lat, lng FROM users WHERE id = $1',
+    'SELECT id, email, display_name, photo_url, neighborhood_area, bio, preferences, lat, lng FROM users WHERE id = $1',
     [req.user.id]
   );
 

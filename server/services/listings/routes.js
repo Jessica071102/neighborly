@@ -6,16 +6,16 @@ const router = express.Router();
 
 // FR-02: Create an item listing
 router.post('/', requireAuth, async (req, res) => {
-  const { name, category, description, photoUrl, lat, lng } = req.body;
+  const { name, category, description, photoUrl, pricePerDay, lat, lng } = req.body;
 
   if (!name || !category || lat == null || lng == null) {
     return res.status(400).json({ error: 'name, category, lat and lng are required' });
   }
 
   const result = await pool.query(
-    `INSERT INTO items (owner_id, name, category, description, photo_url, status, lat, lng)
-     VALUES ($1, $2, $3, $4, $5, 'available', $6, $7) RETURNING id`,
-    [req.user.id, name, category, description || null, photoUrl || null, lat, lng]
+    `INSERT INTO items (owner_id, name, category, description, photo_url, price_per_day, status, lat, lng)
+     VALUES ($1, $2, $3, $4, $5, $6, 'available', $7, $8) RETURNING id`,
+    [req.user.id, name, category, description || null, photoUrl || null, pricePerDay || 0, lat, lng]
   );
 
   res.status(201).json({ id: result.rows[0].id });
@@ -37,7 +37,7 @@ router.get('/:id', async (req, res) => {
   const result = await pool.query(
     `SELECT
        items.id, items.name, items.category, items.description, items.photo_url,
-       items.status, items.created_at,
+       items.status, items.price_per_day, items.created_at,
        users.id AS owner_id, users.display_name AS owner_name,
        users.neighborhood_area AS owner_area
      FROM items
@@ -47,7 +47,16 @@ router.get('/:id', async (req, res) => {
   );
 
   if (!result.rows[0]) return res.status(404).json({ error: 'Item not found' });
-  res.json({ item: result.rows[0] });
+
+  // Booked date ranges (accepted, not yet past) for availability display
+  const bookedResult = await pool.query(
+    `SELECT start_date, end_date FROM borrow_requests
+     WHERE item_id = $1 AND status = 'accepted' AND end_date >= CURRENT_DATE::TEXT
+     ORDER BY start_date`,
+    [req.params.id]
+  );
+
+  res.json({ item: result.rows[0], bookedRanges: bookedResult.rows });
 });
 
 // FR-09: Edit a listing (owner only)
@@ -57,20 +66,21 @@ router.put('/:id', requireAuth, async (req, res) => {
   if (!item) return res.status(404).json({ error: 'Item not found' });
   if (item.owner_id !== req.user.id) return res.status(403).json({ error: 'Not your listing' });
 
-  const { name, category, description, photoUrl, status, lat, lng } = req.body;
+  const { name, category, description, photoUrl, pricePerDay, status, lat, lng } = req.body;
 
   await pool.query(
     `UPDATE items SET
-       name        = COALESCE($1, name),
-       category    = COALESCE($2, category),
-       description = COALESCE($3, description),
-       photo_url   = COALESCE($4, photo_url),
-       status      = COALESCE($5, status),
-       lat         = COALESCE($6, lat),
-       lng         = COALESCE($7, lng)
-     WHERE id = $8`,
+       name          = COALESCE($1, name),
+       category      = COALESCE($2, category),
+       description   = COALESCE($3, description),
+       photo_url     = COALESCE($4, photo_url),
+       price_per_day = COALESCE($5, price_per_day),
+       status        = COALESCE($6, status),
+       lat           = COALESCE($7, lat),
+       lng           = COALESCE($8, lng)
+     WHERE id = $9`,
     [name ?? null, category ?? null, description ?? null, photoUrl ?? null,
-     status ?? null, lat ?? null, lng ?? null, req.params.id]
+     pricePerDay ?? null, status ?? null, lat ?? null, lng ?? null, req.params.id]
   );
 
   res.json({ success: true });

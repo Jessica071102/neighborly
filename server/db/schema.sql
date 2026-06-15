@@ -72,6 +72,12 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Schema migrations (idempotent -- safe to run on every startup)
+ALTER TABLE items ADD COLUMN IF NOT EXISTS price_per_day FLOAT8 NOT NULL DEFAULT 0;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS request_id INTEGER REFERENCES borrow_requests(id);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences TEXT;
+
 -- Indexes to support NFR-01 (search performance)
 CREATE INDEX IF NOT EXISTS idx_items_status ON items(status);
 CREATE INDEX IF NOT EXISTS idx_requests_item ON borrow_requests(item_id);

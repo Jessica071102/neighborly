@@ -22,11 +22,21 @@ router.put('/:id/read', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// Internal helper -- imported directly by other services (requests, messaging).
-async function createNotification(userId, type, content) {
+// FR-10: Mark all notifications as read
+router.put('/read-all', requireAuth, async (req, res) => {
   await pool.query(
-    'INSERT INTO notifications (user_id, type, content) VALUES ($1, $2, $3)',
-    [userId, type, content]
+    'UPDATE notifications SET is_read = 1 WHERE user_id = $1',
+    [req.user.id]
+  );
+  res.json({ success: true });
+});
+
+// Internal helper -- imported directly by other services.
+// requestId is stored so the frontend can deep-link to the right page.
+async function createNotification(userId, type, content, requestId = null) {
+  await pool.query(
+    'INSERT INTO notifications (user_id, type, content, request_id) VALUES ($1, $2, $3, $4)',
+    [userId, type, content, requestId ?? null]
   );
 }
 

@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
 import { LocateIcon } from '../components/Icons';
 
@@ -25,7 +25,7 @@ function PhotoInput({ value, onChange }) {
       {value ? (
         <img src={value} alt="Preview" className="photo-input-preview" />
       ) : (
-        <div className="photo-input-placeholder">No photo yet</div>
+        <div className="photo-input-placeholder">No photo</div>
       )}
       <div className="photo-input-actions">
         <button type="button" className="btn btn-outline btn-sm" onClick={() => fileRef.current.click()}>
@@ -44,7 +44,8 @@ function PhotoInput({ value, onChange }) {
   );
 }
 
-export default function CreateListingPage() {
+export default function EditListingPage() {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: '', category: '', description: '', photoUrl: '', pricePerDay: 0,
@@ -54,6 +55,22 @@ export default function CreateListingPage() {
   const [locLabel, setLocLabel] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+
+  useEffect(() => {
+    api.get(`/items/${id}`)
+      .then(({ item }) => {
+        setForm({
+          name: item.name,
+          category: item.category,
+          description: item.description || '',
+          photoUrl: item.photo_url || '',
+          pricePerDay: item.price_per_day ?? 0,
+        });
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setFetching(false));
+  }, [id]);
 
   function set(field) {
     return (e) => setForm({ ...form, [field]: e.target.value });
@@ -75,18 +92,16 @@ export default function CreateListingPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.name || !form.category) { setError('Name and category are required'); return; }
-    if (!location) { setError('Please set your location so neighbours can find this item'); return; }
     setError('');
     setLoading(true);
     try {
-      await api.post('/items', {
+      await api.put(`/items/${id}`, {
         name: form.name,
         category: form.category,
         description: form.description || undefined,
         photoUrl: form.photoUrl || undefined,
         pricePerDay: parseFloat(form.pricePerDay) || 0,
-        lat: location.lat,
-        lng: location.lng,
+        ...(location ? { lat: location.lat, lng: location.lng } : {}),
       });
       navigate('/my-listings');
     } catch (err) {
@@ -96,11 +111,13 @@ export default function CreateListingPage() {
     }
   }
 
+  if (fetching) return <div className="loading"><div className="spinner" />Loading…</div>;
+
   return (
     <div className="container" style={{ maxWidth: 600 }}>
-      <h1 className="page-title" style={{ marginBottom: 6 }}>List an item</h1>
+      <h1 className="page-title" style={{ marginBottom: 6 }}>Edit listing</h1>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
-        Share something you rarely use with your neighbours.
+        Update your item's details below.
       </p>
 
       {error && <div className="error-box">{error}</div>}
@@ -145,24 +162,24 @@ export default function CreateListingPage() {
             />
             <span className="price-input-suffix">/ day</span>
           </div>
-          <p className="form-hint">Set to 0 for free lending. Agree on payment via chat.</p>
+          <p className="form-hint">Set to 0 for free lending.</p>
         </div>
 
         <div className="form-group">
-          <label className="form-label">Item location *</label>
+          <label className="form-label">Update location (optional)</label>
           <button type="button"
             className={`location-pill${location ? ' active' : ''}`}
             onClick={getLocation} disabled={locLoading}
           >
             <LocateIcon size={14} />
-            {locLoading ? 'Detecting…' : location ? locLabel : 'Use my current location'}
+            {locLoading ? 'Detecting…' : location ? locLabel : 'Update my location'}
           </button>
-          <p className="form-hint">Used to calculate distance for searchers. Your exact coordinates are never shown.</p>
+          <p className="form-hint">Leave blank to keep the current location.</p>
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Creating…' : 'Create listing'}
+            {loading ? 'Saving…' : 'Save changes'}
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => navigate('/my-listings')}>
             Cancel

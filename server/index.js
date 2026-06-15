@@ -15,6 +15,7 @@ const requestsRoutes = require('./services/requests/routes');
 const messagingRoutes = require('./services/messaging/routes');
 const ratingsRoutes = require('./services/ratings/routes');
 const notificationsRoutes = require('./services/notifications/routes');
+const usersRoutes = require('./services/users/routes');
 const registerMessagingSocket = require('./services/messaging/socket');
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/requests', requestsRoutes);         // FR-05, FR-06
 app.use('/api/messages', messagingRoutes);        // FR-07 (REST history)
 app.use('/api/reviews', ratingsRoutes);           // FR-08
 app.use('/api/notifications', notificationsRoutes); // FR-10
+app.use('/api/users', usersRoutes);               // public profiles + profile editing
 
 const server = http.createServer(app);
 const io = new Server(server, {

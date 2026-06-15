@@ -104,8 +104,15 @@ export default function MyListingsPage() {
           <div className="my-listing-row-actions">
             <button
               className="btn btn-ghost btn-sm"
+              onClick={() => navigate(`/items/${item.id}/edit`)}
+              title="Edit listing"
+            >
+              <EditIcon size={14} /> Edit
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
               onClick={() => toggleStatus(item)}
-              title={item.status === 'available' ? 'Mark unavailable' : 'Mark available'}
+              title={item.status === 'available' ? 'Pause listing' : 'Activate listing'}
             >
               {item.status === 'available' ? 'Pause' : 'Activate'}
             </button>

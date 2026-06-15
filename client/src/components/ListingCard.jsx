@@ -29,6 +29,11 @@ export default function ListingCard({ item }) {
             </>
           )}
         </div>
+        <div className="listing-card-price">
+          {item.price_per_day > 0
+            ? <span className="badge badge-price">€{item.price_per_day}/day</span>
+            : <span className="badge badge-green">Free</span>}
+        </div>
       </div>
     </Link>
   );

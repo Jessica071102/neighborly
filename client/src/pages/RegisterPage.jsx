@@ -42,7 +42,7 @@ export default function RegisterPage() {
     try {
       const body = { ...form, ...(location || {}) };
       const data = await api.post('/auth/register', body);
-      login(data.token, data.user);
+      login(data.token, data.user, '/profile/setup');
     } catch (err) {
       setError(err.message);
     } finally {
