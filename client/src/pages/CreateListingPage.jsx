@@ -59,13 +59,13 @@ export default function CreateListingPage() {
         <div className="form-group">
           <label className="form-label">Item name *</label>
           <input className="form-input" placeholder="e.g. Cordless drill"
-            value={form.name} onChange={set('name')} required maxLength={80} />
+            value={form.name} onChange={set('name')} required maxLength={60} />
         </div>
 
         <div className="form-group">
           <label className="form-label">Category *</label>
           <input className="form-input" list="cats" placeholder="Select or type a category"
-            value={form.category} onChange={set('category')} required maxLength={60} />
+            value={form.category} onChange={set('category')} required maxLength={40} />
           <datalist id="cats">
             {CATEGORY_SUGGESTIONS.map((c) => <option key={c} value={c} />)}
           </datalist>
@@ -75,8 +75,8 @@ export default function CreateListingPage() {
           <label className="form-label">Description</label>
           <textarea className="form-input form-textarea"
             placeholder="Condition, included accessories, usage instructions…"
-            value={form.description} onChange={set('description')} maxLength={600} />
-          <span className="char-count">{form.description.length}/600</span>
+            value={form.description} onChange={set('description')} maxLength={400} />
+          <span className="char-count">{form.description.length}/400</span>
         </div>
 
         <div className="form-group">

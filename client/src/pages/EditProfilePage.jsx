@@ -51,13 +51,13 @@ function ProfileForm({ form, setForm, error, loading, onSubmit, isSetup }) {
       <div className="form-group">
         <label className="form-label">Display name</label>
         <input className="form-input" placeholder="How neighbours see you"
-          value={form.displayName} onChange={set('displayName')} maxLength={50} />
+          value={form.displayName} onChange={set('displayName')} maxLength={30} />
       </div>
 
       <div className="form-group">
         <label className="form-label">Neighbourhood</label>
         <input className="form-input" placeholder="e.g. Prenzlauer Berg"
-          value={form.neighborhoodArea} onChange={set('neighborhoodArea')} maxLength={80} />
+          value={form.neighborhoodArea} onChange={set('neighborhoodArea')} maxLength={60} />
       </div>
 
       <div className="form-group">
@@ -65,9 +65,9 @@ function ProfileForm({ form, setForm, error, loading, onSubmit, isSetup }) {
         <textarea
           className="form-input form-textarea"
           placeholder="A short bio — what do you do, what are you happy to lend?"
-          value={form.bio} onChange={set('bio')} rows={3} maxLength={400}
+          value={form.bio} onChange={set('bio')} rows={3} maxLength={250}
         />
-        <span className="char-count">{form.bio.length}/400</span>
+        <span className="char-count">{form.bio.length}/250</span>
       </div>
 
       <div className="form-group">
@@ -91,9 +91,9 @@ function ProfileForm({ form, setForm, error, loading, onSubmit, isSetup }) {
         <textarea
           className="form-input form-textarea"
           placeholder="e.g. Pick up only · Cash preferred · Weekends only"
-          value={form.preferences} onChange={set('preferences')} rows={2} maxLength={200}
+          value={form.preferences} onChange={set('preferences')} rows={2} maxLength={120}
         />
-        <span className="char-count">{form.preferences.length}/200</span>
+        <span className="char-count">{form.preferences.length}/120</span>
         <div className="pref-chips">
           {PREFERENCE_SUGGESTIONS.map((p) => (
             <button key={p} type="button" className="pref-chip" onClick={() => addPreference(p)}>

@@ -99,7 +99,7 @@ export default function SearchPage() {
             placeholder="Search for drills, cameras, bikes…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            maxLength={100}
+            maxLength={60}
           />
         </div>
 
