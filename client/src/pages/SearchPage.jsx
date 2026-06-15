@@ -130,10 +130,27 @@ export default function SearchPage() {
       {locError && <div className="error-box">{locError}</div>}
 
       {!userPos && !locError && (
-        <div className="empty-state">
-          <div className="empty-state-icon"><MapPinIcon size={44} /></div>
-          <h3>Share your location to search</h3>
-          <p>Click "Use my location" above to find items near you.</p>
+        <div className="search-onboarding">
+          <h3>Find items near you</h3>
+          <p>Share your location to discover what your neighbours are offering within walking distance.</p>
+          <div className="search-onboarding-steps">
+            <div className="search-onboarding-step">
+              <span className="search-onboarding-step-num">1</span>
+              Click "Use my location"
+            </div>
+            <div className="search-onboarding-step">
+              <span className="search-onboarding-step-num">2</span>
+              Search or browse items
+            </div>
+            <div className="search-onboarding-step">
+              <span className="search-onboarding-step-num">3</span>
+              Send a borrow request
+            </div>
+          </div>
+          <button className="btn btn-primary" onClick={requestLocation} disabled={locLoading}>
+            <MapPinIcon size={15} />
+            {locLoading ? 'Detecting…' : 'Use my location'}
+          </button>
         </div>
       )}
 
@@ -145,8 +162,19 @@ export default function SearchPage() {
         items.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon"><PackageIcon size={44} /></div>
-            <h3>Nothing found nearby</h3>
-            <p>Try a wider radius or a different search term.</p>
+            <h3>Nothing found nearby yet</h3>
+            <p>Be the first to share something in your area — or invite your neighbours to join.</p>
+            <div className="empty-state-actions">
+              <Link to="/items/create" className="btn btn-primary">List an item</Link>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Hey! I'm using Neighborly to share and borrow items in our neighbourhood. Join for free: ${window.location.origin}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline"
+              >
+                Invite neighbours
+              </a>
+            </div>
           </div>
         ) : (
           <>

@@ -5,6 +5,39 @@ import { api } from '../api';
 import StarRating from '../components/StarRating';
 import { MapPinIcon, LogOutIcon, ListIcon } from '../components/Icons';
 
+function InviteCard() {
+  const [copied, setCopied] = useState(false);
+  const url = window.location.origin;
+  const waText = encodeURIComponent(`Hey! I'm using Neighborly to share and borrow items in our neighbourhood — for free. Join here: ${url}`);
+
+  function copyLink() {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div className="invite-card">
+      <h3>Invite a neighbour</h3>
+      <p>The more people join in your area, the more useful Neighborly becomes for everyone.</p>
+      <div className="invite-card-btns">
+        <a
+          href={`https://wa.me/?text=${waText}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-primary btn-sm"
+        >
+          Share on WhatsApp
+        </a>
+        <button className="btn btn-outline btn-sm" onClick={copyLink}>
+          {copied ? 'Copied!' : 'Copy link'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -47,7 +80,7 @@ export default function ProfilePage() {
         )}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
         <button className="btn btn-outline btn-full" onClick={() => navigate('/my-listings')}
           style={{ justifyContent: 'flex-start' }}>
           <ListIcon size={16} /> My listings
@@ -57,6 +90,8 @@ export default function ProfilePage() {
           <LogOutIcon size={16} /> Sign out
         </button>
       </div>
+
+      <InviteCard />
 
       {!loading && reviews.length > 0 && (
         <>

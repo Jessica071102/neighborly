@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { SearchIcon, PackageIcon, MapPinIcon, CheckIcon, UserIcon, StarIcon } from '../components/Icons';
+import { SearchIcon, PackageIcon, MapPinIcon, CheckIcon, UserIcon, StarIcon, MessageCircleIcon, BellIcon } from '../components/Icons';
 
 const PREVIEW_ITEMS = [
   { name: 'Power Drill', area: 'Kreuzberg', dist: '0.3 km', cat: 'Tools', color: '#EBF5EE' },
@@ -31,12 +31,22 @@ const FEATURES = [
   {
     Icon: UserIcon,
     title: 'Real neighbours, real trust',
-    body: 'Chat before you borrow, leave reviews after. Every interaction builds a stronger, more connected community.'
+    body: 'Every user has a verified profile, star ratings, and a review history. Know who you\'re dealing with before you commit.'
+  },
+  {
+    Icon: MessageCircleIcon,
+    title: 'Chat before you commit',
+    body: 'Message the owner directly, agree on a time, ask questions — all inside the app before anything is handed over.'
   },
   {
     Icon: CheckIcon,
     title: 'Good for the planet',
     body: 'Shared items mean less production, less waste, and a lighter footprint — without giving anything up.'
+  },
+  {
+    Icon: SearchIcon,
+    title: 'Smart local search',
+    body: 'Search by keyword and set a radius — from 1 km to 10 km. Results are sorted by distance so the closest items come first.'
   },
 ];
 
@@ -226,6 +236,84 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── FAQ ── */}
+      <section className="landing-section">
+        <div className="landing-section-header">
+          <h2 className="landing-section-title">Common questions</h2>
+          <p className="landing-section-sub">Everything you need to know before you join.</p>
+        </div>
+        <div className="landing-faq">
+          <details>
+            <summary>
+              Is Neighborly free to use?
+              <span className="landing-faq-plus">+</span>
+            </summary>
+            <div className="landing-faq-answer">
+              Yes — completely free, forever. There are no subscription fees, no transaction
+              fees, and no premium tiers. Neighbourly is built on the idea that sharing
+              should cost nothing.
+            </div>
+          </details>
+          <details>
+            <summary>
+              What if something gets damaged or lost?
+              <span className="landing-faq-plus">+</span>
+            </summary>
+            <div className="landing-faq-answer">
+              We encourage lenders and borrowers to agree on the condition of an item before
+              the handover — a quick photo works well. All messages are stored in the app, so
+              there's a written record of what was agreed. Disputes are resolved directly
+              between neighbours; Neighborly does not act as an insurer or mediator.
+            </div>
+          </details>
+          <details>
+            <summary>
+              How do I know I can trust someone?
+              <span className="landing-faq-plus">+</span>
+            </summary>
+            <div className="landing-faq-answer">
+              Every user has a public profile showing their star rating and written reviews
+              from previous transactions. You can read a person's history before accepting or
+              sending a request. You can also chat with them inside the app before anything
+              changes hands.
+            </div>
+          </details>
+          <details>
+            <summary>
+              Will others see my home address?
+              <span className="landing-faq-plus">+</span>
+            </summary>
+            <div className="landing-faq-answer">
+              No. Other users only see your neighbourhood area name (e.g. "Kreuzberg") and
+              an approximate distance in kilometres. Your precise GPS coordinates are never
+              stored on our servers or shared with anyone.
+            </div>
+          </details>
+          <details>
+            <summary>
+              Can I list any item?
+              <span className="landing-faq-plus">+</span>
+            </summary>
+            <div className="landing-faq-answer">
+              Almost anything goes — tools, electronics, sports gear, camping equipment,
+              kitchen appliances, and more. We ask that all items are legal, safe, and yours
+              to share. Items that are illegal, weapons, or perishable food may not be listed.
+            </div>
+          </details>
+          <details>
+            <summary>
+              What if nothing is listed near me yet?
+              <span className="landing-faq-plus">+</span>
+            </summary>
+            <div className="landing-faq-answer">
+              Be the first! List a few things you rarely use and share the link with your
+              neighbours. Neighborhood apps grow fastest when one person takes the first step.
+              The app includes a built-in invite link you can send over WhatsApp.
+            </div>
+          </details>
+        </div>
+      </section>
+
       {/* ── Final CTA ── */}
       <section className="landing-cta-section">
         <div className="landing-cta-inner">
@@ -235,7 +323,7 @@ export default function LandingPage() {
             Join Neighborly and start sharing today.
           </p>
           <Link to="/register" className="landing-cta-btn">
-            Join for free — no credit card needed
+            Join for free
           </Link>
           <p className="landing-cta-note">Already have an account? <Link to="/login">Sign in →</Link></p>
         </div>
@@ -244,9 +332,11 @@ export default function LandingPage() {
       {/* ── Footer ── */}
       <footer className="landing-footer">
         <span className="landing-nav-logo">Neighborly</span>
-        <span className="landing-footer-note">
-          HWR Berlin · Digital Literacy IV: Software Architecture
-        </span>
+        <div className="landing-footer-links">
+          <Link to="/privacy" className="landing-footer-link">Privacy</Link>
+          <Link to="/terms" className="landing-footer-link">Terms</Link>
+          <span className="landing-footer-note">HWR Berlin · Digital Literacy IV: Software Architecture</span>
+        </div>
       </footer>
 
     </div>
