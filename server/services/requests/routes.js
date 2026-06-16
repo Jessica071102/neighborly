@@ -56,7 +56,8 @@ router.get('/mine', requireAuth, async (req, res) => {
     `SELECT br.*,
        items.name AS item_name, items.price_per_day AS item_price,
        borrower.display_name AS borrower_name,
-       lender.display_name  AS lender_name
+       lender.display_name  AS lender_name,
+       EXISTS(SELECT 1 FROM reviews WHERE request_id = br.id AND reviewer_id = $1) AS has_review
      FROM borrow_requests br
      JOIN items            ON items.id    = br.item_id
      JOIN users AS borrower ON borrower.id = br.borrower_id

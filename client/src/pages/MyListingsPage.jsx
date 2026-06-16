@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import { useToast, Toast } from '../components/Toast';
 import { PlusIcon, PackageIcon, EditIcon, TrashIcon } from '../components/Icons';
 
 function statusBadge(s) {
@@ -14,6 +15,7 @@ export default function MyListingsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { toast, showToast } = useToast();
 
   async function load() {
     try {
@@ -30,9 +32,12 @@ export default function MyListingsPage() {
 
   async function toggleStatus(item) {
     const newStatus = item.status === 'available' ? 'unavailable' : 'available';
+    const action = newStatus === 'unavailable' ? 'pause' : 'activate';
+    if (!window.confirm(`${action === 'pause' ? 'Pause' : 'Activate'} "${item.name}"?`)) return;
     try {
       await api.put(`/items/${item.id}`, { status: newStatus });
       setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, status: newStatus } : i));
+      showToast(newStatus === 'available' ? 'Listing activated' : 'Listing paused');
     } catch (err) {
       setError(err.message);
     }
@@ -43,6 +48,7 @@ export default function MyListingsPage() {
     try {
       await api.delete(`/items/${id}`);
       setItems((prev) => prev.filter((i) => i.id !== id));
+      showToast('Listing deleted');
     } catch (err) {
       setError(err.message);
     }
@@ -50,6 +56,7 @@ export default function MyListingsPage() {
 
   return (
     <div className="container">
+      <Toast toast={toast} />
       <div className="page-header">
         <div>
           <h1 className="page-title">My Listings</h1>

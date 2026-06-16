@@ -1463,6 +1463,28 @@ input, textarea, select { font-family: inherit; }
 .cal-swatch--booked { background: #fee2e2; border: 1px solid #fca5a5; }
 .cal-swatch--sel { background: var(--green); }
 
+/* ── Toast notifications ── */
+.toast {
+  position: fixed;
+  bottom: calc(var(--tabs-h) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 22px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  animation: fadeInUp 0.2s ease;
+  pointer-events: none;
+}
+@media (min-width: 768px) {
+  .toast { bottom: 24px; }
+}
+.toast-success { background: var(--green); color: white; }
+.toast-error   { background: var(--error); color: white; }
+
 /* ── Swipe-to-delete chat messages ── */
 .chat-msg-wrap {
   position: relative;

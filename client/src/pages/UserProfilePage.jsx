@@ -59,7 +59,7 @@ export default function UserProfilePage() {
           </div>
         )}
 
-        {averageRating != null && (
+        {averageRating != null && reviewCount > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
             <StarRating value={Math.round(averageRating)} size={17} />
             <span style={{ fontWeight: 600 }}>{averageRating.toFixed(1)}</span>

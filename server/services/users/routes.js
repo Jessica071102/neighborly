@@ -32,7 +32,7 @@ router.get('/:id/profile', requireAuth, async (req, res) => {
   res.json({
     user: userResult.rows[0],
     reviews: reviewsResult.rows,
-    averageRating: avgResult.rows[0].avg ? parseFloat(avgResult.rows[0].avg) : null,
+    averageRating: avgResult.rows[0].avg !== null ? parseFloat(avgResult.rows[0].avg) : null,
     reviewCount: parseInt(avgResult.rows[0].count),
   });
 });

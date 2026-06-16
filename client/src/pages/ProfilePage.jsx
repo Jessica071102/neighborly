@@ -88,7 +88,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {avgRating != null && (
+        {avgRating != null && reviews.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14 }}>
             <StarRating value={Math.round(avgRating)} size={17} />
             <span style={{ fontWeight: 600 }}>{avgRating.toFixed(1)}</span>

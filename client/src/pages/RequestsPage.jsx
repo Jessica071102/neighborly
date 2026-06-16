@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import StarRating from '../components/StarRating';
+import { useToast, Toast } from '../components/Toast';
 import { MessageCircleIcon, CheckIcon, XIcon, InboxIcon, UserIcon } from '../components/Icons';
 
 function formatDate(d) {
@@ -58,6 +59,7 @@ export default function RequestsPage() {
   const [error, setError] = useState('');
   const [reviewForms, setReviewForms] = useState({});
   const [submittedReviews, setSubmittedReviews] = useState(new Set());
+  const { toast, showToast } = useToast();
 
   async function load() {
     try {
@@ -76,6 +78,12 @@ export default function RequestsPage() {
     try {
       await api.put(`/requests/${id}/status`, { status });
       setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
+      const messages = {
+        accepted: 'Request accepted',
+        declined: 'Request declined',
+        completed: 'Marked as completed',
+      };
+      showToast(messages[status] || 'Updated');
     } catch (err) {
       setError(err.message);
     }
@@ -98,9 +106,16 @@ export default function RequestsPage() {
       await api.post('/reviews', { requestId: r.id, revieweeId, rating: form.rating, comment: form.comment });
       setSubmittedReviews((prev) => new Set([...prev, r.id]));
       setReviewForms((prev) => { const n = { ...prev }; delete n[r.id]; return n; });
+      showToast('Review submitted!');
     } catch (err) {
-      setReviewField(r.id, 'error', err.message);
-      setReviewField(r.id, 'loading', false);
+      if (err.message?.includes('already reviewed')) {
+        setSubmittedReviews((prev) => new Set([...prev, r.id]));
+        setReviewForms((prev) => { const n = { ...prev }; delete n[r.id]; return n; });
+        showToast('You already reviewed this transaction');
+      } else {
+        setReviewField(r.id, 'error', err.message);
+        setReviewField(r.id, 'loading', false);
+      }
     }
   }
 
@@ -132,6 +147,7 @@ export default function RequestsPage() {
 
   return (
     <div className="container">
+      <Toast toast={toast} />
       <div className="page-header">
         <div>
           <h1 className="page-title">Requests</h1>
@@ -283,12 +299,12 @@ export default function RequestsPage() {
               <button className="btn btn-outline btn-sm" onClick={() => navigate(`/chat/${r.id}`)}>
                 <MessageCircleIcon size={14} /> View chat
               </button>
-              {!submittedReviews.has(r.id) && !reviewForms[r.id] && (
+              {!r.has_review && !submittedReviews.has(r.id) && !reviewForms[r.id] && (
                 <button className="btn btn-ghost btn-sm" onClick={() => openReview(r.id)}>
                   Leave review
                 </button>
               )}
-              {submittedReviews.has(r.id) && (
+              {(r.has_review || submittedReviews.has(r.id)) && (
                 <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>✓ Review submitted</span>
               )}
             </div>

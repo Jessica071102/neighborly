@@ -144,12 +144,15 @@ export default function DateRangePicker({ bookedRanges = [], start, end, onChang
         ))}
       </div>
 
-      {bookedRanges.length > 0 && (
-        <div className="cal-legend">
+      <div className="cal-legend">
+        {bookedRanges.length > 0 && (
           <span className="cal-legend-item"><span className="cal-swatch cal-swatch--booked" /> Unavailable</span>
-          <span className="cal-legend-item"><span className="cal-swatch cal-swatch--sel" /> Your selection</span>
-        </div>
-      )}
+        )}
+        <span className="cal-legend-item"><span className="cal-swatch cal-swatch--sel" /> Your selection</span>
+        <span className="cal-legend-item" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
+          <span className="cal-swatch" style={{ background: 'var(--border)' }} /> Past
+        </span>
+      </div>
     </div>
   );
 }

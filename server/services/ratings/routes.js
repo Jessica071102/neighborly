@@ -28,6 +28,15 @@ router.post('/', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'You cannot review yourself' });
   }
 
+  // Prevent duplicate reviews for the same transaction
+  const dupResult = await pool.query(
+    'SELECT id FROM reviews WHERE request_id = $1 AND reviewer_id = $2',
+    [requestId, req.user.id]
+  );
+  if (dupResult.rows.length > 0) {
+    return res.status(409).json({ error: 'You have already reviewed this transaction' });
+  }
+
   await pool.query(
     'INSERT INTO reviews (request_id, reviewer_id, reviewee_id, rating, comment) VALUES ($1, $2, $3, $4, $5)',
     [requestId, req.user.id, revieweeId, rating, comment || null]

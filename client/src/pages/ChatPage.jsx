@@ -20,6 +20,8 @@ export default function ChatPage() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sendError, setSendError] = useState('');
+  const [socketConnected, setSocketConnected] = useState(false);
   const [swipedId, setSwipedId] = useState(null);
   const socketRef = useRef(null);
   const bottomRef = useRef(null);
@@ -49,6 +51,9 @@ export default function ChatPage() {
     socketRef.current = socket;
 
     socket.emit('join', Number(requestId));
+    socket.on('connect', () => setSocketConnected(true));
+    socket.on('disconnect', () => setSocketConnected(false));
+    setSocketConnected(socket.connected);
 
     socket.on('message', (msg) => {
       setMessages((prev) => {
@@ -70,7 +75,12 @@ export default function ChatPage() {
 
   function sendMessage() {
     const content = text.trim();
-    if (!content || !socketRef.current) return;
+    if (!content) return;
+    if (!socketRef.current?.connected) {
+      setSendError('Not connected — please wait and try again.');
+      return;
+    }
+    setSendError('');
     socketRef.current.emit('message', { requestId: Number(requestId), content });
     setText('');
     textareaRef.current?.focus();
@@ -140,6 +150,12 @@ export default function ChatPage() {
         </div>
       </div>
 
+      {!socketConnected && !loading && (
+        <div style={{ background: '#FEF3C7', borderBottom: '1px solid #FDE68A', padding: '6px 16px', fontSize: 13, textAlign: 'center', color: '#92400E' }}>
+          Reconnecting…
+        </div>
+      )}
+
       <div className="chat-messages">
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 14, marginTop: 40 }}>
@@ -192,6 +208,12 @@ export default function ChatPage() {
         })}
         <div ref={bottomRef} />
       </div>
+
+      {sendError && (
+        <div style={{ padding: '6px 16px', background: 'var(--error-bg)', color: 'var(--error)', fontSize: 13, textAlign: 'center' }}>
+          {sendError}
+        </div>
+      )}
 
       <div className="chat-input-area" onClick={(e) => e.stopPropagation()}>
         <textarea

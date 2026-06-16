@@ -192,7 +192,7 @@ export default function ItemDetailPage() {
             <>
               <hr className="divider" style={{ marginTop: 28 }} />
               <h3 style={{ fontWeight: 600, marginBottom: 14 }}>Reviews for {item.owner_name}</h3>
-              {avgRating != null && (
+              {avgRating != null && reviews.length > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                   <StarRating value={Math.round(avgRating)} size={18} />
                   <span style={{ fontWeight: 600 }}>{avgRating.toFixed(1)}</span>
@@ -231,7 +231,7 @@ export default function ItemDetailPage() {
                     <MapPinIcon size={12} /> {item.owner_area}
                   </div>
                 )}
-                {avgRating != null && (
+                {avgRating != null && reviews.length > 0 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                     <StarRating value={Math.round(avgRating)} size={13} />
                     <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{parseFloat(avgRating).toFixed(1)}</span>

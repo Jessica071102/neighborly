@@ -4,6 +4,11 @@ const { requireAuth } = require('../../middleware/auth');
 
 const router = express.Router();
 
+function normalizeCategory(cat) {
+  if (!cat) return null;
+  return cat.trim().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 // FR-02: Create an item listing — location is taken from the owner's profile
 router.post('/', requireAuth, async (req, res) => {
   try {
@@ -23,7 +28,7 @@ router.post('/', requireAuth, async (req, res) => {
     const result = await pool.query(
       `INSERT INTO items (owner_id, name, category, description, photo_url, price_per_day, status, lat, lng)
        VALUES ($1, $2, $3, $4, $5, $6, 'available', $7, $8) RETURNING id`,
-      [req.user.id, name, category, description || null, photoUrl || null, pricePerDay || 0, owner.lat, owner.lng]
+      [req.user.id, name, normalizeCategory(category), description || null, photoUrl || null, pricePerDay || 0, owner.lat, owner.lng]
     );
 
     res.status(201).json({ id: result.rows[0].id });
@@ -84,7 +89,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     await pool.query(
       `UPDATE items SET
          name          = COALESCE($1, name),
-         category      = COALESCE($2, category),
+         category      = COALESCE($2::TEXT, category),
          description   = COALESCE($3, description),
          photo_url     = COALESCE($4, photo_url),
          price_per_day = COALESCE($5, price_per_day),
@@ -92,7 +97,7 @@ router.put('/:id', requireAuth, async (req, res) => {
          lat           = COALESCE($7, lat),
          lng           = COALESCE($8, lng)
        WHERE id = $9`,
-      [name ?? null, category ?? null, description ?? null, photoUrl ?? null,
+      [name ?? null, normalizeCategory(category), description ?? null, photoUrl ?? null,
        pricePerDay ?? null, status ?? null, lat ?? null, lng ?? null, req.params.id]
     );
 
@@ -105,13 +110,26 @@ router.put('/:id', requireAuth, async (req, res) => {
 
 // FR-09: Delete a listing (owner only)
 router.delete('/:id', requireAuth, async (req, res) => {
-  const itemResult = await pool.query('SELECT * FROM items WHERE id = $1', [req.params.id]);
-  const item = itemResult.rows[0];
-  if (!item) return res.status(404).json({ error: 'Item not found' });
-  if (item.owner_id !== req.user.id) return res.status(403).json({ error: 'Not your listing' });
+  try {
+    const itemResult = await pool.query('SELECT * FROM items WHERE id = $1', [req.params.id]);
+    const item = itemResult.rows[0];
+    if (!item) return res.status(404).json({ error: 'Item not found' });
+    if (item.owner_id !== req.user.id) return res.status(403).json({ error: 'Not your listing' });
 
-  await pool.query('DELETE FROM items WHERE id = $1', [req.params.id]);
-  res.json({ success: true });
+    const activeResult = await pool.query(
+      "SELECT COUNT(*) AS count FROM borrow_requests WHERE item_id = $1 AND status IN ('accepted', 'pending')",
+      [req.params.id]
+    );
+    if (parseInt(activeResult.rows[0].count) > 0) {
+      return res.status(409).json({ error: 'This listing has active or pending requests. Resolve them first.' });
+    }
+
+    await pool.query('DELETE FROM items WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DELETE /items/:id error:', err);
+    res.status(500).json({ error: 'Failed to delete listing' });
+  }
 });
 
 module.exports = router;
