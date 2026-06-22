@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../../db/db');
+const { requireAuth } = require('../../middleware/auth');
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ function distanceKm(lat1, lng1, lat2, lng2) {
 //
 // NFR-04: results never include the lender's precise lat/lng -- only the
 // computed distanceKm and the lender's neighborhood_area.
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   const { lat, lng, q, radiusKm } = req.query;
 
   if (lat == null || lng == null) {

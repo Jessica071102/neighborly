@@ -46,7 +46,7 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // FR-08: Get all reviews + average rating for a user's profile
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', requireAuth, async (req, res) => {
   const reviewsResult = await pool.query(
     `SELECT reviews.*, users.display_name AS reviewer_name
      FROM reviews

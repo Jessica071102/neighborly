@@ -50,7 +50,7 @@ router.get('/mine', requireAuth, async (req, res) => {
 // FR-04: Item detail view
 // NFR-04: do not expose the owner's precise lat/lng to the viewer -- only
 // the neighborhood_area name. The owner can still see it via /mine.
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireAuth, async (req, res) => {
   const result = await pool.query(
     `SELECT
        items.id, items.name, items.category, items.description, items.photo_url,
