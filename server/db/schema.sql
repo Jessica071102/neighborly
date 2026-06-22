@@ -78,6 +78,21 @@ ALTER TABLE notifications ADD COLUMN IF NOT EXISTS request_id INTEGER REFERENCES
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences TEXT;
 
+-- Migrate start_date/end_date from TEXT to DATE for type safety and query planner support
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'borrow_requests' AND column_name = 'start_date' AND data_type = 'text'
+  ) THEN
+    ALTER TABLE borrow_requests ALTER COLUMN start_date TYPE DATE USING start_date::DATE;
+    ALTER TABLE borrow_requests ALTER COLUMN end_date   TYPE DATE USING end_date::DATE;
+  END IF;
+END $$;
+
+-- FR-08: enforce one review per reviewer per transaction at the DB level
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_review ON reviews (request_id, reviewer_id);
+
 -- Indexes to support NFR-01 (search performance)
 CREATE INDEX IF NOT EXISTS idx_items_status ON items(status);
 CREATE INDEX IF NOT EXISTS idx_requests_item ON borrow_requests(item_id);

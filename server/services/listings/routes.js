@@ -68,7 +68,7 @@ router.get('/:id', async (req, res) => {
   // Booked date ranges (accepted, not yet past) for availability display
   const bookedResult = await pool.query(
     `SELECT start_date, end_date FROM borrow_requests
-     WHERE item_id = $1 AND status = 'accepted' AND end_date >= CURRENT_DATE::TEXT
+     WHERE item_id = $1 AND status = 'accepted' AND end_date >= CURRENT_DATE
      ORDER BY start_date`,
     [req.params.id]
   );

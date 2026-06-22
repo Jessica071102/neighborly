@@ -20,7 +20,11 @@ function distanceKm(lat1, lng1, lat2, lng2) {
 // Query params:
 //   lat, lng    - the searching user's current coordinates (required)
 //   q           - keyword, matched against name/category/description (optional)
-//   radiusKm    - search radius in km (default 1, per NFR/charter)
+//   radiusKm    - search radius in km (default 2)
+//
+// NFR-01 (Performance): a SQL-level bounding-box pre-filter limits the result
+// set before the exact Haversine calculation runs in JS, so the query stays
+// fast as the item count grows.
 //
 // NFR-04: results never include the lender's precise lat/lng -- only the
 // computed distanceKm and the lender's neighborhood_area.
@@ -33,11 +37,16 @@ router.get('/', async (req, res) => {
 
   const userLat = parseFloat(lat);
   const userLng = parseFloat(lng);
-  const radius = radiusKm ? parseFloat(radiusKm) : 1;
+  const radius = radiusKm ? parseFloat(radiusKm) : 2;
 
   if (Number.isNaN(userLat) || Number.isNaN(userLng) || Number.isNaN(radius)) {
     return res.status(400).json({ error: 'lat, lng and radiusKm must be numbers' });
   }
+
+  // Bounding-box pre-filter in SQL (NFR-01): 1° lat ≈ 111 km; 1° lng ≈ 111·cos(lat) km.
+  // This excludes items clearly outside the radius before the exact Haversine check.
+  const latDelta = radius / 111.0;
+  const lngDelta = radius / (111.0 * Math.cos((userLat * Math.PI) / 180));
 
   const result = await pool.query(
     `SELECT
@@ -46,23 +55,18 @@ router.get('/', async (req, res) => {
        users.display_name AS owner_name, users.neighborhood_area AS owner_area
      FROM items
      JOIN users ON users.id = items.owner_id
-     WHERE items.status = 'available'`
+     WHERE items.status = 'available'
+       AND items.lat BETWEEN $1 AND $2
+       AND items.lng BETWEEN $3 AND $4
+       AND ($5::TEXT IS NULL
+            OR items.name        ILIKE '%' || $5 || '%'
+            OR items.category    ILIKE '%' || $5 || '%'
+            OR items.description ILIKE '%' || $5 || '%')`,
+    [userLat - latDelta, userLat + latDelta, userLng - lngDelta, userLng + lngDelta, q || null]
   );
 
-  let items = result.rows;
-
-  // Keyword filter (FR-03)
-  if (q) {
-    const keyword = q.toLowerCase();
-    items = items.filter((item) =>
-      item.name.toLowerCase().includes(keyword) ||
-      item.category.toLowerCase().includes(keyword) ||
-      (item.description || '').toLowerCase().includes(keyword)
-    );
-  }
-
-  // Proximity filter + sort by distance, then strip precise coordinates
-  items = items
+  // Exact Haversine radius filter + sort + strip precise coordinates (NFR-04)
+  const items = result.rows
     .map((item) => ({
       ...item,
       distanceKm: Math.round(distanceKm(userLat, userLng, item.lat, item.lng) * 10) / 10

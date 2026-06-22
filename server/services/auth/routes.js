@@ -41,7 +41,10 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
-  const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+  const result = await pool.query(
+    'SELECT id, email, display_name, neighborhood_area, password_hash FROM users WHERE email = $1',
+    [email]
+  );
   const user = result.rows[0];
 
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
