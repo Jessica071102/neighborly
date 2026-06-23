@@ -275,8 +275,8 @@ export default function LandingPage() {
             </summary>
             <div className="landing-faq-answer">
               No. Other users only see your neighbourhood area name (e.g. "Kreuzberg") and
-              an approximate distance in kilometres. Your precise GPS coordinates are never
-              stored on our servers or shared with anyone.
+              an approximate distance in kilometres. Your precise GPS coordinates are stored
+              securely and are never visible to other users.
             </div>
           </details>
           <details>
