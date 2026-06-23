@@ -80,7 +80,6 @@ export default function LandingPage() {
   return (
     <div className="landing">
 
-      {/* ── Nav ── */}
       <nav className="landing-nav">
         <span className="landing-nav-logo">Neighborly</span>
         <div className="landing-nav-links">
@@ -89,13 +88,9 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ── Hero ── */}
       <section className="landing-hero">
         <div className="landing-hero-grid">
           <div className="landing-hero-text">
-            <div className="landing-hero-badge">
-              <span className="landing-badge-dot" /> Hyperlocal · Community · Sustainable
-            </div>
             <h1 className="landing-hero-title">
               Why buy when your<br />
               <span className="landing-hero-green">neighbour has one?</span>
@@ -109,14 +104,11 @@ export default function LandingPage() {
               <Link to="/login" className="btn btn-outline btn-lg">Sign in</Link>
             </div>
             <p className="landing-hero-trust">
-              <CheckIcon size={13} /> Free to join &nbsp;·&nbsp;
-              <CheckIcon size={13} /> No fees ever &nbsp;·&nbsp;
-              <CheckIcon size={13} /> Real neighbours only
+              Free to join · No fees ever · Real neighbours only
             </p>
           </div>
 
           <div className="landing-hero-visual">
-            <div className="landing-hero-blob" />
             {PREVIEW_ITEMS.map((item, i) => (
               <div
                 key={item.name}
@@ -139,7 +131,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Stats ── */}
       {stats && (
         <div className="landing-stats">
           <div className="landing-stats-inner">
@@ -165,7 +156,6 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* ── Features ── */}
       <section className="landing-section">
         <div className="landing-section-header">
           <h2 className="landing-section-title">Built for city living</h2>
@@ -184,7 +174,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── How it works ── */}
       <section className="landing-how-section">
         <div className="landing-section">
           <div className="landing-section-header">
@@ -197,13 +186,11 @@ export default function LandingPage() {
               <h3>Create a free account</h3>
               <p>Sign up and set your neighbourhood. It takes under a minute.</p>
             </div>
-            <div className="landing-step-connector" />
             <div className="landing-step">
               <div className="landing-step-num">2</div>
               <h3>Browse or list items</h3>
               <p>Search for things nearby or share items you rarely use.</p>
             </div>
-            <div className="landing-step-connector" />
             <div className="landing-step">
               <div className="landing-step-num">3</div>
               <h3>Borrow and connect</h3>
@@ -213,7 +200,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
       {testimonials.length > 0 && (
         <section className="landing-testimonials-section">
           <div className="landing-section-header" style={{ maxWidth: 1060, margin: '0 auto 48px' }}>
@@ -241,7 +227,6 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ── FAQ ── */}
       <section className="landing-faq-section">
         <div className="landing-section-header" style={{ maxWidth: 760, margin: '0 auto 48px' }}>
           <h2 className="landing-section-title">Common questions</h2>
@@ -319,7 +304,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Final CTA ── */}
       <section className="landing-cta-section">
         <div className="landing-cta-inner">
           <h2>Your neighbourhood is waiting.</h2>
@@ -334,7 +318,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
       <footer className="landing-footer">
         <span className="landing-nav-logo">Neighborly</span>
         <div className="landing-footer-links">

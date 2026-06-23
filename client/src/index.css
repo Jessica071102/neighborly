@@ -887,14 +887,6 @@ input, textarea, select { font-family: inherit; }
   from { opacity: 0; transform: translateY(28px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes floatCard {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-8px); }
-}
-@keyframes blobPulse {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  50%       { transform: scale(1.08) rotate(6deg); }
-}
 
 .landing { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
 
@@ -941,20 +933,6 @@ input, textarea, select { font-family: inherit; }
 .landing-hero-text > *:nth-child(4) { animation-delay: 0.35s; }
 .landing-hero-text > *:nth-child(5) { animation-delay: 0.45s; }
 
-.landing-hero-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: var(--green-light); color: var(--green-dark);
-  font-size: 12px; font-weight: 600;
-  letter-spacing: 0.04em; text-transform: uppercase;
-  padding: 6px 14px; border-radius: 99px;
-  margin-bottom: 22px;
-}
-.landing-badge-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--green);
-  display: inline-block;
-  animation: blobPulse 2s ease-in-out infinite;
-}
 .landing-hero-title {
   font-size: clamp(34px, 5vw, 54px);
   font-weight: 800; line-height: 1.1;
@@ -978,28 +956,14 @@ input, textarea, select { font-family: inherit; }
 
 /* Preview cards in hero */
 .landing-hero-visual {
-  position: relative;
   display: flex; flex-direction: column; gap: 12px;
 }
-.landing-hero-blob {
-  position: absolute;
-  width: 320px; height: 320px;
-  background: radial-gradient(circle, #c7e4d2 0%, transparent 70%);
-  border-radius: 50%;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 0;
-  animation: blobPulse 6s ease-in-out infinite;
-  pointer-events: none;
-}
 .landing-preview-card {
-  position: relative; z-index: 1;
   background: white;
   border-radius: var(--radius);
   box-shadow: 0 4px 24px rgba(0,0,0,0.09);
   padding: 14px 16px;
   display: flex; align-items: center; gap: 12px;
-  animation: floatCard 4s ease-in-out infinite;
   border: 1px solid rgba(0,0,0,0.04);
 }
 .landing-preview-card:nth-child(odd) { margin-left: 20px; }
@@ -1065,11 +1029,12 @@ input, textarea, select { font-family: inherit; }
 /* How it works */
 .landing-how-section { background: white; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .landing-steps {
-  display: flex; align-items: center;
-  justify-content: center; gap: 0; flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
 }
+@media (max-width: 640px) { .landing-steps { grid-template-columns: 1fr; gap: 24px; } }
 .landing-step {
-  flex: 1; min-width: 200px; max-width: 260px;
   text-align: center; padding: 20px 24px;
 }
 .landing-step-num {
@@ -1082,12 +1047,6 @@ input, textarea, select { font-family: inherit; }
 }
 .landing-step h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
 .landing-step p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
-.landing-step-connector {
-  flex-shrink: 0; width: 48px; height: 2px;
-  background: var(--green-muted); border-radius: 2px;
-  margin-bottom: 40px;
-}
-@media (max-width: 640px) { .landing-step-connector { display: none; } }
 
 /* Testimonials */
 .landing-testimonials-section {
