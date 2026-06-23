@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   user_id INTEGER NOT NULL REFERENCES users(id),
   type TEXT NOT NULL,             -- e.g. 'new_request' | 'request_accepted' | 'request_declined' | 'new_message' | 'review_prompt'
   content TEXT NOT NULL,
-  is_read INTEGER NOT NULL DEFAULT 0,
+  is_read BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -87,6 +87,18 @@ BEGIN
   ) THEN
     ALTER TABLE borrow_requests ALTER COLUMN start_date TYPE DATE USING start_date::DATE;
     ALTER TABLE borrow_requests ALTER COLUMN end_date   TYPE DATE USING end_date::DATE;
+  END IF;
+END $$;
+
+-- Migrate is_read from INTEGER to BOOLEAN (idempotent)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'notifications' AND column_name = 'is_read' AND data_type = 'integer'
+  ) THEN
+    ALTER TABLE notifications ALTER COLUMN is_read TYPE BOOLEAN USING is_read::BOOLEAN;
+    ALTER TABLE notifications ALTER COLUMN is_read SET DEFAULT FALSE;
   END IF;
 END $$;
 

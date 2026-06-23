@@ -84,7 +84,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     if (!item) return res.status(404).json({ error: 'Item not found' });
     if (item.owner_id !== req.user.id) return res.status(403).json({ error: 'Not your listing' });
 
-    const { name, category, description, photoUrl, pricePerDay, status, lat, lng } = req.body;
+    const { name, category, description, photoUrl, pricePerDay, status } = req.body;
 
     await pool.query(
       `UPDATE items SET
@@ -93,12 +93,10 @@ router.put('/:id', requireAuth, async (req, res) => {
          description   = COALESCE($3, description),
          photo_url     = COALESCE($4, photo_url),
          price_per_day = COALESCE($5, price_per_day),
-         status        = COALESCE($6, status),
-         lat           = COALESCE($7, lat),
-         lng           = COALESCE($8, lng)
-       WHERE id = $9`,
+         status        = COALESCE($6, status)
+       WHERE id = $7`,
       [name ?? null, normalizeCategory(category), description ?? null, photoUrl ?? null,
-       pricePerDay ?? null, status ?? null, lat ?? null, lng ?? null, req.params.id]
+       pricePerDay ?? null, status ?? null, req.params.id]
     );
 
     res.json({ success: true });
