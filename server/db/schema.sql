@@ -36,8 +36,8 @@ CREATE TABLE IF NOT EXISTS borrow_requests (
   item_id INTEGER NOT NULL REFERENCES items(id),
   borrower_id INTEGER NOT NULL REFERENCES users(id),
   lender_id INTEGER NOT NULL REFERENCES users(id),
-  start_date TEXT NOT NULL,
-  end_date TEXT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending', -- pending | accepted | declined | completed
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

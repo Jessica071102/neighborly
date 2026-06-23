@@ -34,7 +34,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       token,
-      user: { id, email, displayName, neighborhoodArea: neighborhoodArea || null }
+      user: { id, email, display_name: displayName, neighborhood_area: neighborhoodArea || null }
     });
   } catch (err) {
     console.error('POST /auth/register error:', err);
@@ -65,8 +65,8 @@ router.post('/login', async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
-        displayName: user.display_name,
-        neighborhoodArea: user.neighborhood_area
+        display_name: user.display_name,
+        neighborhood_area: user.neighborhood_area
       }
     });
   } catch (err) {
