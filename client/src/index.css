@@ -4,6 +4,7 @@
   --green-light: #EBF5EE;
   --green-muted: #C7E4D2;
   --bg: #FAFAF8;
+  --bg-alt: #F2F7F4;
   --surface: #FFFFFF;
   --text: #1A1A1A;
   --text-muted: #6B7280;
@@ -1089,27 +1090,44 @@ input, textarea, select { font-family: inherit; }
 @media (max-width: 640px) { .landing-step-connector { display: none; } }
 
 /* Testimonials */
+.landing-testimonials-section {
+  background: var(--bg-alt, #F7FAF7); padding: 80px 24px;
+}
 .landing-testimonials-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 1060px;
+  margin: 0 auto;
 }
+@media (max-width: 860px) { .landing-testimonials-grid { grid-template-columns: 1fr; max-width: 540px; } }
 .landing-testimonial {
   background: white; border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 28px 24px;
+  border-radius: var(--radius); padding: 32px 28px;
   transition: box-shadow 0.2s, transform 0.2s;
+  display: flex; flex-direction: column;
 }
 .landing-testimonial:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
 .landing-quote-mark {
-  font-size: 52px; line-height: 1;
-  color: var(--green-muted); font-family: Georgia, serif;
-  margin-bottom: 10px; display: block;
+  font-size: 48px; line-height: 1;
+  color: var(--green); font-family: Georgia, serif;
+  margin-bottom: 8px; display: block; opacity: 0.35;
 }
 .landing-testimonial-text {
   font-size: 15px; line-height: 1.72;
-  color: var(--text); margin-bottom: 16px;
+  color: var(--text); flex: 1; margin-bottom: 20px;
 }
-.landing-stars { display: flex; gap: 3px; margin-bottom: 12px; }
+.landing-stars { display: flex; gap: 3px; margin-bottom: 14px; }
+.landing-testimonial-footer {
+  display: flex; align-items: center; gap: 12px; margin-top: auto;
+}
+.landing-testimonial-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--green-muted); color: var(--green-dark);
+  font-weight: 700; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
 .landing-testimonial-author { font-weight: 700; font-size: 14px; }
 .landing-testimonial-area { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
 
@@ -1161,32 +1179,36 @@ input, textarea, select { font-family: inherit; }
 .landing-footer-note { font-size: 13px; color: var(--text-muted); }
 
 /* ── FAQ section ── */
-.landing-faq { max-width: 720px; margin: 0 auto; }
+.landing-faq-section { background: var(--bg-alt, #F7FAF7); padding: 80px 24px; }
+.landing-faq { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
 .landing-faq details {
   border: 1px solid var(--border);
-  border-radius: 10px;
-  margin-bottom: 8px;
+  border-radius: 12px;
   background: white;
   overflow: hidden;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.landing-faq details[open] { border-color: var(--green); }
+.landing-faq details[open] { border-color: var(--green); box-shadow: 0 2px 12px rgba(52,199,89,0.08); }
 .landing-faq summary {
-  padding: 18px 20px;
+  padding: 20px 24px;
   font-weight: 600; font-size: 15px;
   cursor: pointer; list-style: none;
-  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
   user-select: none;
 }
 .landing-faq summary::-webkit-details-marker { display: none; }
 .landing-faq-plus {
-  font-size: 22px; font-weight: 300; color: var(--green);
-  transition: transform 0.2s; display: inline-block; flex-shrink: 0;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--green-muted); color: var(--green-dark);
+  font-size: 18px; font-weight: 500; line-height: 24px; text-align: center;
+  transition: transform 0.2s, background 0.15s; display: inline-block; flex-shrink: 0;
 }
-.landing-faq details[open] .landing-faq-plus { transform: rotate(45deg); }
+.landing-faq details[open] .landing-faq-plus { transform: rotate(45deg); background: var(--green); color: white; }
 .landing-faq-answer {
-  padding: 0 20px 18px;
-  font-size: 14px; color: var(--text-muted); line-height: 1.7;
+  padding: 0 24px 20px;
+  font-size: 14px; color: var(--text-muted); line-height: 1.75;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
 }
 
 /* ── 404 page ── */

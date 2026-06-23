@@ -215,8 +215,8 @@ export default function LandingPage() {
 
       {/* ── Testimonials ── */}
       {testimonials.length > 0 && (
-        <section className="landing-section">
-          <div className="landing-section-header">
+        <section className="landing-testimonials-section">
+          <div className="landing-section-header" style={{ maxWidth: 1060, margin: '0 auto 48px' }}>
             <h2 className="landing-section-title">Neighbours love it</h2>
             <p className="landing-section-sub">Real reviews from real people in real neighbourhoods.</p>
           </div>
@@ -226,9 +226,14 @@ export default function LandingPage() {
                 <div className="landing-quote-mark">"</div>
                 <p className="landing-testimonial-text">{t.comment}</p>
                 <Stars count={t.rating} />
-                <div style={{ marginTop: 12 }}>
-                  <div className="landing-testimonial-author">{t.display_name}</div>
-                  <div className="landing-testimonial-area">{t.neighborhood_area}</div>
+                <div className="landing-testimonial-footer">
+                  <div className="landing-testimonial-avatar">
+                    {t.display_name ? t.display_name.charAt(0).toUpperCase() : '?'}
+                  </div>
+                  <div>
+                    <div className="landing-testimonial-author">{t.display_name}</div>
+                    <div className="landing-testimonial-area">{t.neighborhood_area}</div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -237,8 +242,8 @@ export default function LandingPage() {
       )}
 
       {/* ── FAQ ── */}
-      <section className="landing-section">
-        <div className="landing-section-header">
+      <section className="landing-faq-section">
+        <div className="landing-section-header" style={{ maxWidth: 760, margin: '0 auto 48px' }}>
           <h2 className="landing-section-title">Common questions</h2>
           <p className="landing-section-sub">Everything you need to know before you join.</p>
         </div>
