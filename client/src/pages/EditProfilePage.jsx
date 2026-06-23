@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 import PhotoInput from '../components/PhotoInput';
 import { LocateIcon } from '../components/Icons';
+import { reverseGeocode } from '../utils/geo';
 
 const PREFERENCE_SUGGESTIONS = [
   'Pick up only', 'Can deliver nearby', 'Cash payment preferred',
@@ -31,8 +32,11 @@ function ProfileForm({ form, setForm, error, loading, onSubmit, isSetup }) {
     setLocLoading(true);
     setLocError('');
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setForm((f) => ({ ...f, lat: pos.coords.latitude, lng: pos.coords.longitude }));
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        setForm((f) => ({ ...f, lat, lng }));
+        const area = await reverseGeocode(lat, lng);
+        if (area) setForm((f) => ({ ...f, neighborhoodArea: area }));
         setLocLoading(false);
       },
       () => { setLocError('Could not get location. Please allow location access.'); setLocLoading(false); }

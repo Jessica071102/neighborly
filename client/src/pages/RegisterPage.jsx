@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 import { LocateIcon } from '../components/Icons';
+import { reverseGeocode } from '../utils/geo';
 
 export default function RegisterPage() {
   const { login } = useAuth();
@@ -23,9 +24,12 @@ export default function RegisterPage() {
     if (!navigator.geolocation) { setError('Geolocation not supported in this browser'); return; }
     setLocLoading(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLocLabel(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        setLocation({ lat, lng });
+        setLocLabel(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        const area = await reverseGeocode(lat, lng);
+        if (area) setForm((f) => ({ ...f, neighborhoodArea: area }));
         setLocLoading(false);
       },
       () => { setError('Could not get location. You can continue without it.'); setLocLoading(false); }

@@ -26,6 +26,29 @@ app.use(express.json({ limit: '15mb' }));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
+// Public platform stats + real testimonials for the landing page
+app.get('/api/stats', async (req, res) => {
+  const [items, users, areas, rating, testimonials] = await Promise.all([
+    pool.query("SELECT COUNT(*) FROM items WHERE status = 'available'"),
+    pool.query('SELECT COUNT(*) FROM users'),
+    pool.query('SELECT COUNT(DISTINCT neighborhood_area) FROM users WHERE neighborhood_area IS NOT NULL'),
+    pool.query('SELECT ROUND(AVG(rating)::numeric, 1) AS avg FROM reviews'),
+    pool.query(`
+      SELECT r.comment, r.rating, u.display_name, u.neighborhood_area
+      FROM reviews r JOIN users u ON u.id = r.reviewer_id
+      WHERE r.comment IS NOT NULL AND TRIM(r.comment) != '' AND LENGTH(TRIM(r.comment)) > 5
+      ORDER BY r.created_at DESC LIMIT 3
+    `),
+  ]);
+  res.json({
+    itemCount: parseInt(items.rows[0].count),
+    userCount: parseInt(users.rows[0].count),
+    neighbourhoodCount: parseInt(areas.rows[0].count),
+    averageRating: rating.rows[0].avg ? parseFloat(rating.rows[0].avg) : null,
+    testimonials: testimonials.rows,
+  });
+});
+
 // Each mount point corresponds to a "service" from the SDD / Project Charter
 app.use('/api/auth', authRoutes);                 // FR-01
 app.use('/api/items', listingsRoutes);            // FR-02, FR-04, FR-09

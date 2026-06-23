@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { SearchIcon, PackageIcon, MapPinIcon, CheckIcon, UserIcon, StarIcon, MessageCircleIcon, BellIcon } from '../components/Icons';
+import { api } from '../api';
+import { SearchIcon, PackageIcon, MapPinIcon, CheckIcon, UserIcon, MessageCircleIcon } from '../components/Icons';
 
 const PREVIEW_ITEMS = [
   { name: 'Power Drill', area: 'Kreuzberg', dist: '0.3 km', cat: 'Tools', color: '#EBF5EE' },
@@ -10,12 +11,6 @@ const PREVIEW_ITEMS = [
   { name: 'Road Bike', area: 'Friedrichshain', dist: '0.5 km', cat: 'Sport', color: '#FEE2E2' },
 ];
 
-const STATS = [
-  { value: '500+', label: 'Items shared' },
-  { value: '12', label: 'Neighbourhoods' },
-  { value: '200+', label: 'Active users' },
-  { value: '4.9', label: 'Avg. rating' },
-];
 
 const FEATURES = [
   {
@@ -50,26 +45,6 @@ const FEATURES = [
   },
 ];
 
-const TESTIMONIALS = [
-  {
-    text: "I borrowed a drill to hang shelves and ended up having coffee with my neighbour. Neighborly builds real connections.",
-    name: "Lisa M.",
-    area: "Kreuzberg, Berlin",
-    rating: 5,
-  },
-  {
-    text: "I listed 8 items collecting dust at home. They've been borrowed over 20 times. Knowing my stuff is being used feels amazing.",
-    name: "Max S.",
-    area: "Prenzlauer Berg, Berlin",
-    rating: 5,
-  },
-  {
-    text: "As a student I can't afford everything. I borrowed a tent for a weekend trip without spending €200. This app is a game changer.",
-    name: "Anna K.",
-    area: "Mitte, Berlin",
-    rating: 5,
-  },
-];
 
 function Stars({ count = 5 }) {
   return (
@@ -86,10 +61,19 @@ function Stars({ count = 5 }) {
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [stats, setStats] = useState(null);
+  const [testimonials, setTestimonials] = useState([]);
 
   useEffect(() => {
     if (!loading && user) navigate('/search', { replace: true });
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    api.get('/stats').then((data) => {
+      setStats(data);
+      setTestimonials(data.testimonials || []);
+    }).catch(() => {});
+  }, []);
 
   if (loading) return null;
 
@@ -156,16 +140,30 @@ export default function LandingPage() {
       </section>
 
       {/* ── Stats ── */}
-      <div className="landing-stats">
-        <div className="landing-stats-inner">
-          {STATS.map((s) => (
-            <div key={s.label} className="landing-stat">
-              <div className="landing-stat-value">{s.value}</div>
-              <div className="landing-stat-label">{s.label}</div>
+      {stats && (
+        <div className="landing-stats">
+          <div className="landing-stats-inner">
+            <div className="landing-stat">
+              <div className="landing-stat-value">{stats.itemCount}</div>
+              <div className="landing-stat-label">Items shared</div>
             </div>
-          ))}
+            <div className="landing-stat">
+              <div className="landing-stat-value">{stats.neighbourhoodCount}</div>
+              <div className="landing-stat-label">Neighbourhoods</div>
+            </div>
+            <div className="landing-stat">
+              <div className="landing-stat-value">{stats.userCount}</div>
+              <div className="landing-stat-label">Neighbours</div>
+            </div>
+            {stats.averageRating && (
+              <div className="landing-stat">
+                <div className="landing-stat-value">{stats.averageRating}</div>
+                <div className="landing-stat-label">Avg. rating</div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Features ── */}
       <section className="landing-section">
@@ -216,25 +214,27 @@ export default function LandingPage() {
       </section>
 
       {/* ── Testimonials ── */}
-      <section className="landing-section">
-        <div className="landing-section-header">
-          <h2 className="landing-section-title">Neighbours love it</h2>
-          <p className="landing-section-sub">Real stories from real people in real neighbourhoods.</p>
-        </div>
-        <div className="landing-testimonials-grid">
-          {TESTIMONIALS.map((t) => (
-            <div key={t.name} className="landing-testimonial">
-              <div className="landing-quote-mark">"</div>
-              <p className="landing-testimonial-text">{t.text}</p>
-              <Stars count={t.rating} />
-              <div style={{ marginTop: 12 }}>
-                <div className="landing-testimonial-author">{t.name}</div>
-                <div className="landing-testimonial-area">{t.area}</div>
+      {testimonials.length > 0 && (
+        <section className="landing-section">
+          <div className="landing-section-header">
+            <h2 className="landing-section-title">Neighbours love it</h2>
+            <p className="landing-section-sub">Real reviews from real people in real neighbourhoods.</p>
+          </div>
+          <div className="landing-testimonials-grid">
+            {testimonials.map((t, i) => (
+              <div key={i} className="landing-testimonial">
+                <div className="landing-quote-mark">"</div>
+                <p className="landing-testimonial-text">{t.comment}</p>
+                <Stars count={t.rating} />
+                <div style={{ marginTop: 12 }}>
+                  <div className="landing-testimonial-author">{t.display_name}</div>
+                  <div className="landing-testimonial-area">{t.neighborhood_area}</div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── FAQ ── */}
       <section className="landing-section">
@@ -319,7 +319,7 @@ export default function LandingPage() {
         <div className="landing-cta-inner">
           <h2>Your neighbourhood is waiting.</h2>
           <p>
-            Thousands of items are sitting unused a few streets from you.
+            Items are sitting unused a few streets from you.
             Join Neighborly and start sharing today.
           </p>
           <Link to="/register" className="landing-cta-btn">
