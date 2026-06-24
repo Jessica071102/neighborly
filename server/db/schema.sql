@@ -131,16 +131,25 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_review ON reviews (request_id, revi
 INSERT INTO neighborhoods (name, lat, lng) VALUES
   ('Charlottenburg',  52.5168, 13.3044),
   ('Friedrichshain',  52.5153, 13.4534),
+  ('Köpenick',        52.4547, 13.5806),
   ('Kreuzberg',       52.4987, 13.4043),
+  ('Lichtenberg',     52.5118, 13.5028),
+  ('Marzahn',         52.5418, 13.5614),
   ('Mitte',           52.5200, 13.4050),
+  ('Moabit',          52.5313, 13.3402),
   ('Neukölln',        52.4806, 13.4322),
   ('Pankow',          52.5688, 13.4030),
   ('Prenzlauer Berg', 52.5390, 13.4135),
+  ('Reinickendorf',   52.5767, 13.3453),
   ('Schöneberg',      52.4847, 13.3633),
   ('Spandau',         52.5351, 13.2006),
   ('Steglitz',        52.4573, 13.3212),
   ('Tempelhof',       52.4729, 13.4088),
-  ('Wedding',         52.5490, 13.3730)
+  ('Treptow',         52.4768, 13.4548),
+  ('Wedding',         52.5490, 13.3730),
+  ('Weißensee',       52.5537, 13.4655),
+  ('Wilmersdorf',     52.4882, 13.3063),
+  ('Zehlendorf',      52.4327, 13.2561)
 ON CONFLICT (name) DO NOTHING;
 
 -- Link users to their neighbourhood for Haversine distance computation

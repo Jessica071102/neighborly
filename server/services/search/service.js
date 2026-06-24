@@ -6,13 +6,31 @@
 const pool = require('../../db/db');
 const { distanceKm } = require('./haversine');
 
+// LATERAL subquery: resolves a centroid for a user row.
+// Prefers the explicit neighborhood_id FK; falls back to ILIKE name matching
+// so users who set neighbourhood as free text before the dropdown existed
+// still get their centroid resolved correctly.
+const CENTROID_LATERAL = `
+  LEFT JOIN LATERAL (
+    SELECT lat, lng FROM neighborhoods
+    WHERE id = users.neighborhood_id
+       OR (users.neighborhood_id IS NULL AND name ILIKE users.neighborhood_area)
+    LIMIT 1
+  ) n ON TRUE
+`;
+
 async function searchListings(userId, { q, neighborhood, maxDistance }) {
   // Resolve the requesting user's neighbourhood centroid for distance sorting
   const userRow = (await pool.query(
     `SELECT n.lat, n.lng
-     FROM users u
-     LEFT JOIN neighborhoods n ON n.id = u.neighborhood_id
-     WHERE u.id = $1`,
+     FROM users
+     LEFT JOIN LATERAL (
+       SELECT lat, lng FROM neighborhoods
+       WHERE id = users.neighborhood_id
+          OR (users.neighborhood_id IS NULL AND name ILIKE users.neighborhood_area)
+       LIMIT 1
+     ) n ON TRUE
+     WHERE users.id = $1`,
     [userId]
   )).rows[0];
   const userLat = userRow?.lat ?? null;
@@ -27,7 +45,7 @@ async function searchListings(userId, { q, neighborhood, maxDistance }) {
        n.lat AS item_lat, n.lng AS item_lng
      FROM items
      JOIN users ON users.id = items.owner_id
-     LEFT JOIN neighborhoods n ON n.id = users.neighborhood_id
+     ${CENTROID_LATERAL}
      WHERE items.status = 'available'
        AND ($1::TEXT IS NULL
             OR items.name        ILIKE '%' || $1 || '%'
@@ -55,7 +73,8 @@ async function searchListings(userId, { q, neighborhood, maxDistance }) {
     return 0;
   });
 
-  // Apply radius filter if requested — exclude items whose distance is unknown
+  // Apply radius filter if requested — items without a centroid are excluded
+  // when a specific radius is chosen (we can't confirm they're within range)
   if (maxDistance != null) {
     return items.filter((i) => i.distance_km != null && i.distance_km <= maxDistance);
   }
