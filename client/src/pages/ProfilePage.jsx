@@ -43,13 +43,18 @@ export default function ProfilePage() {
   const [reviews, setReviews] = useState([]);
   const [avgRating, setAvgRating] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [openDisputeCount, setOpenDisputeCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
-    api.get(`/reviews/user/${user.id}`)
-      .then((d) => { setReviews(d.reviews); setAvgRating(d.averageRating); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      api.get(`/reviews/user/${user.id}`),
+      api.get(`/users/${user.id}/profile`),
+    ]).then(([reviewData, profileData]) => {
+      setReviews(reviewData.reviews);
+      setAvgRating(reviewData.averageRating);
+      setOpenDisputeCount(profileData.openDisputeCount || 0);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [user]);
 
   const initials = user?.display_name
@@ -93,6 +98,12 @@ export default function ProfilePage() {
             <StarRating value={Math.round(avgRating)} size={17} />
             <span style={{ fontWeight: 600 }}>{avgRating.toFixed(1)}</span>
             <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>({reviews.length} review{reviews.length !== 1 ? 's' : ''})</span>
+          </div>
+        )}
+
+        {openDisputeCount > 0 && (
+          <div className="dispute-badge" style={{ margin: '10px auto 0', display: 'inline-flex' }}>
+            ⚠ {openDisputeCount} open dispute{openDisputeCount !== 1 ? 's' : ''}
           </div>
         )}
 

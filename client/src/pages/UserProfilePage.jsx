@@ -32,7 +32,7 @@ export default function UserProfilePage() {
   if (error) return <div className="container"><div className="error-box">{error}</div></div>;
   if (!data) return null;
 
-  const { user, reviews, averageRating, reviewCount } = data;
+  const { user, reviews, averageRating, reviewCount, openDisputeCount } = data;
 
   const initials = user.display_name
     ? user.display_name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -67,7 +67,13 @@ export default function UserProfilePage() {
           </div>
         )}
 
-        <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+        {openDisputeCount > 0 && (
+          <div className="dispute-badge" style={{ margin: '10px auto 0', display: 'inline-flex' }}>
+            ⚠ {openDisputeCount} open dispute{openDisputeCount !== 1 ? 's' : ''}
+          </div>
+        )}
+
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: openDisputeCount > 0 ? 8 : 0 }}>
           Member since {new Date(user.created_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
         </div>
       </div>

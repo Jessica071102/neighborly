@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS borrow_requests (
   lender_id INTEGER NOT NULL REFERENCES users(id),
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending', -- pending | accepted | declined | completed
+  status TEXT NOT NULL DEFAULT 'pending', -- pending | accepted | declined | return_reported | disputed | resolved | completed
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -97,10 +97,27 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'notifications' AND column_name = 'is_read' AND data_type = 'integer'
   ) THEN
+    ALTER TABLE notifications ALTER COLUMN is_read DROP DEFAULT;
     ALTER TABLE notifications ALTER COLUMN is_read TYPE BOOLEAN USING is_read::BOOLEAN;
     ALTER TABLE notifications ALTER COLUMN is_read SET DEFAULT FALSE;
   END IF;
 END $$;
+
+-- FR-11, FR-12: Condition photos for borrow requests (handover and return)
+CREATE TABLE IF NOT EXISTS request_photos (
+  id SERIAL PRIMARY KEY,
+  request_id INTEGER NOT NULL REFERENCES borrow_requests(id),
+  uploader_id INTEGER NOT NULL REFERENCES users(id),
+  photo_url TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('handover', 'return')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- FR-11: Track mutual dispute resolution — both parties must confirm before badge clears
+ALTER TABLE borrow_requests ADD COLUMN IF NOT EXISTS dispute_resolved_borrower BOOLEAN DEFAULT FALSE;
+ALTER TABLE borrow_requests ADD COLUMN IF NOT EXISTS dispute_resolved_lender BOOLEAN DEFAULT FALSE;
+
+CREATE INDEX IF NOT EXISTS idx_request_photos_request ON request_photos(request_id);
 
 -- FR-08: enforce one review per reviewer per transaction at the DB level
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_review ON reviews (request_id, reviewer_id);

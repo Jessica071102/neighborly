@@ -18,35 +18,52 @@ const notificationsRoutes = require('./services/notifications/routes');
 const usersRoutes = require('./services/users/routes');
 const registerMessagingSocket = require('./services/messaging/socket');
 
-const app = express();
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+// Prevent an unhandled rejection in any async route from crashing the process
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});
 
-app.use(cors({ origin: CLIENT_ORIGIN }));
+const app = express();
+
+// Accept requests from the deployed client or localhost in development
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+app.use(cors({
+  origin: (origin, cb) => {
+    // Allow same-origin requests (no Origin header) and the configured client origin
+    if (!origin || origin === CLIENT_ORIGIN) return cb(null, true);
+    cb(new Error('Not allowed by CORS'));
+  },
+}));
 app.use(express.json({ limit: '15mb' }));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 // Public platform stats + real testimonials for the landing page
 app.get('/api/stats', async (req, res) => {
-  const [items, users, areas, rating, testimonials] = await Promise.all([
-    pool.query("SELECT COUNT(*) FROM items WHERE status = 'available'"),
-    pool.query('SELECT COUNT(*) FROM users'),
-    pool.query('SELECT COUNT(DISTINCT neighborhood_area) FROM users WHERE neighborhood_area IS NOT NULL'),
-    pool.query('SELECT ROUND(AVG(rating)::numeric, 1) AS avg FROM reviews'),
-    pool.query(`
-      SELECT r.comment, r.rating, u.display_name, u.neighborhood_area
-      FROM reviews r JOIN users u ON u.id = r.reviewer_id
-      WHERE r.comment IS NOT NULL AND TRIM(r.comment) != '' AND LENGTH(TRIM(r.comment)) > 5
-      ORDER BY r.created_at DESC LIMIT 3
-    `),
-  ]);
-  res.json({
-    itemCount: parseInt(items.rows[0].count),
-    userCount: parseInt(users.rows[0].count),
-    neighbourhoodCount: parseInt(areas.rows[0].count),
-    averageRating: rating.rows[0].avg ? parseFloat(rating.rows[0].avg) : null,
-    testimonials: testimonials.rows,
-  });
+  try {
+    const [items, users, areas, rating, testimonials] = await Promise.all([
+      pool.query("SELECT COUNT(*) FROM items WHERE status = 'available'"),
+      pool.query('SELECT COUNT(*) FROM users'),
+      pool.query('SELECT COUNT(DISTINCT neighborhood_area) FROM users WHERE neighborhood_area IS NOT NULL'),
+      pool.query('SELECT ROUND(AVG(rating)::numeric, 1) AS avg FROM reviews'),
+      pool.query(`
+        SELECT r.comment, r.rating, u.display_name, u.neighborhood_area
+        FROM reviews r JOIN users u ON u.id = r.reviewer_id
+        WHERE r.comment IS NOT NULL AND TRIM(r.comment) != '' AND LENGTH(TRIM(r.comment)) > 5
+        ORDER BY r.created_at DESC LIMIT 3
+      `),
+    ]);
+    res.json({
+      itemCount: parseInt(items.rows[0].count),
+      userCount: parseInt(users.rows[0].count),
+      neighbourhoodCount: parseInt(areas.rows[0].count),
+      averageRating: rating.rows[0].avg ? parseFloat(rating.rows[0].avg) : null,
+      testimonials: testimonials.rows,
+    });
+  } catch (err) {
+    console.error('GET /api/stats error:', err);
+    res.status(500).json({ error: 'Could not load stats' });
+  }
 });
 
 // Each mount point corresponds to a "service" from the SDD / Project Charter

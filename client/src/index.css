@@ -443,6 +443,48 @@ input, textarea, select { font-family: inherit; }
 .badge-red { background: #FEE2E2; color: var(--error); }
 .badge-yellow { background: #FEF3C7; color: #92400E; }
 .badge-blue { background: #EFF6FF; color: #2563EB; }
+.badge-orange { background: #FEF3C7; color: #B45309; }
+
+/* FR-11: dispute notice and badge */
+.dispute-notice {
+  padding: 10px 14px;
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #92400E;
+  margin: 8px 0;
+  line-height: 1.5;
+}
+.dispute-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  color: #92400E;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* FR-12: condition photo grid */
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.photo-thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.photo-thumb:hover { opacity: 0.85; }
 
 /* ── Page header ── */
 .page-header {

@@ -68,7 +68,7 @@ router.get('/:id', requireAuth, async (req, res) => {
   // Booked date ranges (accepted, not yet past) for availability display
   const bookedResult = await pool.query(
     `SELECT start_date, end_date FROM borrow_requests
-     WHERE item_id = $1 AND status = 'accepted' AND end_date >= CURRENT_DATE
+     WHERE item_id = $1 AND status IN ('accepted', 'return_reported', 'disputed') AND end_date >= CURRENT_DATE
      ORDER BY start_date`,
     [req.params.id]
   );
@@ -115,7 +115,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
     if (item.owner_id !== req.user.id) return res.status(403).json({ error: 'Not your listing' });
 
     const activeResult = await pool.query(
-      "SELECT COUNT(*) AS count FROM borrow_requests WHERE item_id = $1 AND status IN ('accepted', 'pending')",
+      "SELECT COUNT(*) AS count FROM borrow_requests WHERE item_id = $1 AND status IN ('pending', 'accepted', 'return_reported', 'disputed')",
       [req.params.id]
     );
     if (parseInt(activeResult.rows[0].count) > 0) {
