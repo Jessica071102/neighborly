@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import ListingCard from '../components/ListingCard';
-import { SearchIcon, MapPinIcon, PackageIcon } from '../components/Icons';
+import { SearchIcon, PackageIcon } from '../components/Icons';
 
 const SESSION_KEY = 'neighborly_search';
 const DISTANCE_OPTIONS = [
@@ -74,20 +74,16 @@ export default function SearchPage() {
           />
         </div>
 
-        <div className="search-input-wrap" style={{ flex: '0 1 200px' }}>
-          <MapPinIcon size={16} />
-          <select
-            className="search-input"
-            value={maxDistance}
-            onChange={(e) => setMaxDistance(e.target.value)}
-            disabled={!user?.neighborhood_id}
-            title={!user?.neighborhood_id ? 'Set your neighbourhood in Edit Profile to filter by distance' : undefined}
-          >
-            {DISTANCE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
+        <select
+          className="search-input"
+          style={{ flex: '0 1 180px', padding: '10px 14px', cursor: 'pointer' }}
+          value={maxDistance}
+          onChange={(e) => setMaxDistance(e.target.value)}
+        >
+          {DISTANCE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
       </div>
 
       {searching && (
@@ -99,7 +95,11 @@ export default function SearchPage() {
           <div className="empty-state">
             <div className="empty-state-icon"><PackageIcon size={44} /></div>
             <h3>Nothing found</h3>
-            <p>Try a different keyword or clear the neighbourhood filter to browse everything.</p>
+            <p>
+              {maxDistance && !user?.neighborhood_id
+                ? 'Set your neighbourhood in Edit Profile to use distance filtering.'
+                : 'Try a different keyword or set the distance to "Any distance" to browse everything.'}
+            </p>
             <div className="empty-state-actions">
               <Link to="/items/create" className="btn btn-primary">List an item</Link>
               <a
