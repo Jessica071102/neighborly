@@ -25,15 +25,10 @@ process.on('unhandledRejection', (reason) => {
 
 const app = express();
 
-// Accept requests from the deployed client or localhost in development
+// In production the client is served from the same Express server (same origin),
+// so CORS is only needed for local development where Vite runs on :5173.
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
-app.use(cors({
-  origin: (origin, cb) => {
-    // Allow same-origin requests (no Origin header) and the configured client origin
-    if (!origin || origin === CLIENT_ORIGIN) return cb(null, true);
-    cb(new Error('Not allowed by CORS'));
-  },
-}));
+app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json({ limit: '15mb' }));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
@@ -75,6 +70,16 @@ app.use('/api/messages', messagingRoutes);        // FR-07 (REST history)
 app.use('/api/reviews', ratingsRoutes);           // FR-08
 app.use('/api/notifications', notificationsRoutes); // FR-10
 app.use('/api/users', usersRoutes);               // public profiles + profile editing
+
+// Serve the built React client in production (same-origin, no CORS needed)
+const clientDist = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  // Let React Router handle all non-API paths
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
 
 const server = http.createServer(app);
 const io = new Server(server, {
