@@ -6,7 +6,7 @@
 const pool = require('../../db/db');
 const { distanceKm } = require('./haversine');
 
-async function searchListings(userId, { q, neighborhood }) {
+async function searchListings(userId, { q, neighborhood, maxDistance }) {
   // Resolve the requesting user's neighbourhood centroid for distance sorting
   const userRow = (await pool.query(
     `SELECT n.lat, n.lng
@@ -54,6 +54,11 @@ async function searchListings(userId, { q, neighborhood }) {
     if (b.distance_km != null) return 1;
     return 0;
   });
+
+  // Apply radius filter if requested — exclude items whose distance is unknown
+  if (maxDistance != null) {
+    return items.filter((i) => i.distance_km != null && i.distance_km <= maxDistance);
+  }
 
   return items;
 }

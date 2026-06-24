@@ -9,8 +9,12 @@ const router = express.Router();
 // All business logic (DB queries, Haversine math, sorting) lives in service.js.
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { q, neighborhood } = req.query;
-    const items = await searchListings(req.user.id, { q, neighborhood });
+    const { q, neighborhood, maxDistance } = req.query;
+    const items = await searchListings(req.user.id, {
+      q,
+      neighborhood,
+      maxDistance: maxDistance ? Number(maxDistance) : null,
+    });
     res.json({ items });
   } catch (err) {
     console.error('GET /search error:', err);

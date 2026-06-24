@@ -6,6 +6,13 @@ import ListingCard from '../components/ListingCard';
 import { SearchIcon, MapPinIcon, PackageIcon } from '../components/Icons';
 
 const SESSION_KEY = 'neighborly_search';
+const DISTANCE_OPTIONS = [
+  { label: 'Any distance', value: '' },
+  { label: 'Within 2 km',  value: '2' },
+  { label: 'Within 5 km',  value: '5' },
+  { label: 'Within 10 km', value: '10' },
+  { label: 'Within 20 km', value: '20' },
+];
 
 function loadSession() {
   try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)) || {}; } catch { return {}; }
@@ -15,24 +22,21 @@ export default function SearchPage() {
   const { user } = useAuth();
   const saved = loadSession();
   const [query, setQuery] = useState(saved.query ?? '');
-  // Pre-fill neighbourhood from the user's profile but let them clear/change it
-  const [neighborhood, setNeighborhood] = useState(
-    saved.neighborhood !== undefined ? saved.neighborhood : (user?.neighborhood_area || '')
-  );
+  const [maxDistance, setMaxDistance] = useState(saved.maxDistance ?? '');
   const [items, setItems] = useState([]);
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
 
   useEffect(() => {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ query, neighborhood }));
-  }, [query, neighborhood]);
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ query, maxDistance }));
+  }, [query, maxDistance]);
 
-  const runSearch = useCallback(async (q, nb) => {
+  const runSearch = useCallback(async (q, dist) => {
     setSearching(true);
     try {
       const params = new URLSearchParams();
       if (q) params.set('q', q);
-      if (nb) params.set('neighborhood', nb);
+      if (dist) params.set('maxDistance', dist);
       const data = await api.get(`/search?${params}`);
       setItems(data.items);
       setSearched(true);
@@ -43,11 +47,11 @@ export default function SearchPage() {
     }
   }, []);
 
-  // Debounce searches as the user types
+  // Debounce searches as the user types or changes the distance filter
   useEffect(() => {
-    const t = setTimeout(() => runSearch(query, neighborhood), 350);
+    const t = setTimeout(() => runSearch(query, maxDistance), 350);
     return () => clearTimeout(t);
-  }, [query, neighborhood, runSearch]);
+  }, [query, maxDistance, runSearch]);
 
   return (
     <div className="container-wide">
@@ -70,15 +74,19 @@ export default function SearchPage() {
           />
         </div>
 
-        <div className="search-input-wrap" style={{ flex: '0 1 220px' }}>
+        <div className="search-input-wrap" style={{ flex: '0 1 200px' }}>
           <MapPinIcon size={16} />
-          <input
+          <select
             className="search-input"
-            placeholder="Neighbourhood, e.g. Kreuzberg"
-            value={neighborhood}
-            onChange={(e) => setNeighborhood(e.target.value)}
-            maxLength={60}
-          />
+            value={maxDistance}
+            onChange={(e) => setMaxDistance(e.target.value)}
+            disabled={!user?.neighborhood_id}
+            title={!user?.neighborhood_id ? 'Set your neighbourhood in Edit Profile to filter by distance' : undefined}
+          >
+            {DISTANCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -108,7 +116,7 @@ export default function SearchPage() {
           <>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
               {items.length} item{items.length !== 1 ? 's' : ''} found
-              {neighborhood ? ` in ${neighborhood}` : ''}
+              {maxDistance ? ` within ${maxDistance} km` : ''}
               {items.some((i) => i.distance_km != null) ? ' · sorted by distance' : ''}
             </p>
             <div className="listings-grid">
