@@ -8,45 +8,53 @@ with each other, and leave ratings after a transaction. Full requirements are
 in `Neighborly_Project_Charter.docx` in the project root.
 
 ## Architecture decision
-**Modular monolith** with service-oriented folder boundaries. Each folder under
-`server/services/` corresponds to a "service" in the SDD and is intentionally
-decoupled from the others (own routes, own queries) so it *could* later be
-split into a real microservice without major restructuring.
+**Modular monolith** with service-oriented folder boundaries, using plain REST
+request/response throughout — no WebSockets, no push notifications.
 
-This is a deliberate trade-off worth mentioning in the presentation:
-microservices overhead (separate deployments, network calls, service
-discovery) is too high for this timeline, but the module boundaries
-demonstrate the intended architecture and keep the option open.
+Each folder under `server/services/` corresponds to a "service" in the SDD and
+is intentionally decoupled (own routes, own queries). This aligns with the
+Client-Server pattern taught in the course and keeps the codebase simple.
 
 Services and the Functional Requirements (FR) they implement:
-- `auth`          — FR-01 (registration, login, JWT, profile)
-- `listings`      — FR-02, FR-04, FR-09 (item CRUD, detail view, my listings)
-- `search`        — FR-03 (geolocation + keyword search)
-- `requests`      — FR-05, FR-06 (borrow request workflow)
-- `messaging`     — FR-07 (chat — REST history + Socket.io real-time)
-- `ratings`       — FR-08 (reviews after completed transactions)
-- `notifications` — FR-10 (in-app notifications)
+- `auth`      — FR-01 (registration, login, JWT, profile)
+- `listings`  — FR-02, FR-04, FR-09 (item CRUD, detail view, my listings)
+- `search`    — FR-03 (neighbourhood text filter + keyword search)
+- `requests`  — FR-05, FR-06, FR-11 (borrow request workflow + return/dispute)
+- `messaging` — FR-07 (chat — REST history + REST send, client polls every 4 s)
+- `ratings`   — FR-08 (reviews after completed transactions)
+- `users`     — public profiles + profile editing
 
 ## Tech stack
 - Backend: Node.js + Express
-- DB: SQLite via `better-sqlite3` (file at `server/db/neighborly.db`, created
-  automatically from `server/db/schema.sql` on first run)
+- DB: PostgreSQL via `pg` (Neon in production; schema auto-applied from
+  `server/db/schema.sql` on every startup — idempotent migrations)
 - Auth: JWT (`jsonwebtoken`) + `bcryptjs`
-- Real-time: Socket.io
-- Frontend: React + Vite, `react-router-dom`, `socket.io-client`
-- Keep it simple — no extra build tooling, no ORM
+- Frontend: React + Vite, `react-router-dom`
+- Keep it simple — no extra build tooling, no ORM, no WebSockets
+
+## Key design decisions (mention these in the presentation)
+
+- **No geolocation.** Search filters on the owner's `neighborhood_area` text
+  column (ILIKE). No `lat`/`lng` is stored anywhere. This is the simplest
+  possible implementation of FR-03 and fully satisfies NFR-04 (no precise
+  coordinates ever collected).
+- **No payments table.** `price_per_day` is display-only. Neighborly never
+  handles money; parties settle privately (classifieds-style). There is an
+  explanatory comment in `schema.sql`.
+- **No notifications table.** `borrow_requests.status` is the notification.
+  Each party sees current transaction state on their Requests page. There is an
+  explanatory comment in `schema.sql`.
+- **Chat is polling.** `ChatPage` sends via `POST /api/messages/:requestId` and
+  refreshes via `GET` on a 4-second interval. No WebSocket connection is opened.
+- **Condition photos (FR-11/FR-12).** Borrower must upload a return photo
+  before reporting a return; lender can then confirm or dispute. Mutual
+  acknowledgement required before a dispute clears.
 
 ## Key non-functional requirements to keep in mind while coding
-- **NFR-01 (Performance)**: search must respond within ~2 seconds even with
-  many listings — keep the search query simple and indexed.
-- **NFR-03 (Reliability)**: chat messages must never be lost. Always write a
-  message to the database BEFORE (or atomically with) broadcasting it via
-  Socket.io, so a reconnecting client can always reload full history from
-  `GET /api/messages/:requestId`.
-- **NFR-04 (Security/Privacy)**: never return a user's precise `lat`/`lng` to
-  *other* users in API responses. Only the owner sees their own coordinates.
-  Other users should see `neighborhood_area` (a human-readable area name) and
-  a computed `distanceKm`, not raw coordinates.
+- **NFR-01 (Performance)**: search query is simple and uses indexes — no
+  in-process distance calculations.
+- **NFR-04 (Security/Privacy)**: no `lat`/`lng` anywhere. Other users only
+  ever see `neighborhood_area` (a human-readable area name).
 - **NFR-05 (Security)**: passwords are always hashed with bcrypt; never log or
   return `password_hash`.
 - **NFR-06 (Modifiability)**: item `category` is free text / a config list,
@@ -58,7 +66,7 @@ Services and the Functional Requirements (FR) they implement:
 # Backend (port 4000)
 cd server
 npm install
-cp .env.example .env
+cp .env.example .env   # fill in DATABASE_URL and JWT_SECRET
 npm run dev
 
 # Frontend (port 5173, proxies /api -> :4000)
@@ -72,41 +80,18 @@ npm run dev
   `server/services/<name>/routes.js`, mounted in `server/index.js`.
 - Protected routes use `requireAuth` from `server/middleware/auth.js`, which
   sets `req.user = { id, email }` from the JWT.
-- DB access is synchronous via better-sqlite3:
-  `db.prepare('SELECT ...').get(...)` / `.all(...)` / `.run(...)` — no
-  async/await needed for queries.
+- DB access uses `pg` with async/await: `await pool.query('SELECT ...', [...])`.
 - Add a comment referencing the FR ID(s) above each route, e.g.
-  `// FR-03: Geolocation-based search` — this keeps traceability back to the
-  Project Charter for the SDD and presentation.
+  `// FR-03: Neighbourhood-based search` — keeps traceability to the Project Charter.
 
-## Current status / suggested build order
-Work through this list top to bottom. Each item should be runnable and
-testable (via curl/Postman or the UI) before moving to the next.
+## Current status
+All features are implemented and the UI is complete:
 
-1. [x] Scaffold — server boots, client boots, `/api/health` works, DB schema
-       created automatically
-2. [x] Auth (FR-01) — register/login/me implemented — test end-to-end from
-       the client (build a Login/Register page)
-3. [x] Listings (FR-02, FR-04, FR-09) — basic CRUD implemented — build the
-       "Create Listing" form and "My Listings" page
-4. [x] Search (FR-03) — basic implementation done — build a search page that
-       uses `navigator.geolocation.getCurrentPosition()` for the user's
-       coordinates and a radius slider
-5. [x] Borrow requests (FR-05, FR-06) — basic implementation done — build the
-       "Request to Borrow" button and an "Incoming/Outgoing Requests" page
-       for accept/decline
-6. [x] Messaging (FR-07) — Socket.io wired server-side — build the chat UI
-       (connect with the JWT, join `request:<id>` room, send/receive)
-7. [x] Ratings (FR-08) — basic implementation done — build the review form,
-       shown once a request's status is `completed`
-8. [ ] Notifications (FR-10) — list/read endpoints exist but nothing creates
-       notifications yet. Call `createNotification()` (exported from
-       `server/services/notifications/routes.js`) from the `requests`
-       service when a request is created/accepted/declined, and surface the
-       list in the UI.
-9. [ ] Polish — loading states, error handling, basic styling, and a "mark
-       request as completed" action so reviews (step 7) can be tested.
-
-`[x]` above means "backend exists, needs a UI" — none of the React pages
-exist yet beyond the placeholder in `client/src/App.jsx`. Build pages one
-service at a time, following this order.
+1. [x] Auth (FR-01) — register/login/profile
+2. [x] Listings (FR-02, FR-04, FR-09) — CRUD + photo upload
+3. [x] Search (FR-03) — neighbourhood + keyword filter
+4. [x] Borrow requests (FR-05, FR-06) — full workflow with accept/decline
+5. [x] Messaging (FR-07) — REST chat with 4 s polling
+6. [x] Ratings (FR-08) — post-transaction reviews with star ratings
+7. [x] Return confirmation + dispute flow (FR-11) — mutual resolution
+8. [x] Condition photos (FR-12) — handover and return photos required

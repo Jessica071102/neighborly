@@ -1,7 +1,6 @@
 const express = require('express');
 const pool = require('../../db/db');
 const { requireAuth } = require('../../middleware/auth');
-const { createNotification } = require('../notifications/routes');
 
 const router = express.Router();
 
@@ -61,12 +60,8 @@ router.post('/', requireAuth, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, 'pending') RETURNING id`,
       [itemId, req.user.id, item.owner_id, startDate, endDate]
     );
-    const requestId = result.rows[0].id;
 
-    // FR-10: notify the lender
-    createNotification(item.owner_id, 'new_request', `New borrow request for "${item.name}"`, requestId).catch(console.error);
-
-    res.status(201).json({ id: requestId });
+    res.status(201).json({ id: result.rows[0].id });
   } catch (err) {
     console.error('POST /requests error:', err);
     res.status(500).json({ error: 'Failed to send request' });
@@ -109,27 +104,16 @@ router.put('/:id/status', requireAuth, async (req, res) => {
     const request = await fetchRequest(req.params.id);
     if (!request) return res.status(404).json({ error: 'Request not found' });
 
-    if (status === 'accepted' || status === 'declined') {
-      // Lender can accept/decline; borrower can only decline (withdraw) their own pending request
-      const isLender = request.lender_id === req.user.id;
-      const isBorrowerWithdrawing = request.borrower_id === req.user.id && status === 'declined';
-      if (!isLender && !isBorrowerWithdrawing) {
-        return res.status(403).json({ error: 'Only the item owner can accept or decline' });
-      }
+    const isLender = request.lender_id === req.user.id;
+    const isBorrowerWithdrawing = request.borrower_id === req.user.id && status === 'declined';
+    if (!isLender && !isBorrowerWithdrawing) {
+      return res.status(403).json({ error: 'Only the item owner can accept or decline' });
     }
     if (request.status !== 'pending') {
       return res.status(400).json({ error: 'Only pending requests can be accepted or declined' });
     }
 
     await pool.query('UPDATE borrow_requests SET status = $1 WHERE id = $2', [status, req.params.id]);
-
-    const rid = parseInt(req.params.id);
-    if (status === 'accepted') {
-      createNotification(request.borrower_id, 'request_accepted', `Your borrow request for "${request.item_name}" was accepted!`, rid).catch(console.error);
-    } else if (request.lender_id === req.user.id) {
-      createNotification(request.borrower_id, 'request_declined', `Your borrow request for "${request.item_name}" was declined.`, rid).catch(console.error);
-    }
-
     res.json({ success: true });
   } catch (err) {
     console.error('PUT /requests/:id/status error:', err);
@@ -215,14 +199,6 @@ router.post('/:id/report-return', requireAuth, async (req, res) => {
     }
 
     await pool.query("UPDATE borrow_requests SET status = 'return_reported' WHERE id = $1", [req.params.id]);
-
-    const rid = parseInt(req.params.id);
-    createNotification(
-      request.lender_id, 'return_reported',
-      `${request.borrower_name} reported returning "${request.item_name}". Please review the photos and confirm.`,
-      rid
-    ).catch(console.error);
-
     res.json({ success: true });
   } catch (err) {
     console.error('POST /requests/:id/report-return error:', err);
@@ -243,11 +219,6 @@ router.post('/:id/confirm-return', requireAuth, async (req, res) => {
     }
 
     await pool.query("UPDATE borrow_requests SET status = 'completed' WHERE id = $1", [req.params.id]);
-
-    const rid = parseInt(req.params.id);
-    createNotification(request.borrower_id, 'review_prompt', `"${request.item_name}" return confirmed! Leave a review for ${request.lender_name}.`, rid).catch(console.error);
-    createNotification(request.lender_id, 'review_prompt', `"${request.item_name}" return confirmed! Leave a review for ${request.borrower_name}.`, rid).catch(console.error);
-
     res.json({ success: true });
   } catch (err) {
     console.error('POST /requests/:id/confirm-return error:', err);
@@ -268,14 +239,6 @@ router.post('/:id/dispute', requireAuth, async (req, res) => {
     }
 
     await pool.query("UPDATE borrow_requests SET status = 'disputed' WHERE id = $1", [req.params.id]);
-
-    const rid = parseInt(req.params.id);
-    createNotification(
-      request.borrower_id, 'dispute_raised',
-      `${request.lender_name} raised a dispute about "${request.item_name}". Please discuss in chat and mark as resolved when agreed.`,
-      rid
-    ).catch(console.error);
-
     res.json({ success: true });
   } catch (err) {
     console.error('POST /requests/:id/dispute error:', err);
@@ -306,19 +269,11 @@ router.post('/:id/resolve', requireAuth, async (req, res) => {
       [req.params.id]
     );
     const flags = updated.rows[0];
-    const rid = parseInt(req.params.id);
 
     if (flags.dispute_resolved_borrower && flags.dispute_resolved_lender) {
       await pool.query("UPDATE borrow_requests SET status = 'resolved' WHERE id = $1", [req.params.id]);
-      createNotification(request.borrower_id, 'dispute_resolved', `Dispute for "${request.item_name}" resolved by both parties.`, rid).catch(console.error);
-      createNotification(request.lender_id, 'dispute_resolved', `Dispute for "${request.item_name}" resolved by both parties.`, rid).catch(console.error);
       return res.json({ success: true, fullyResolved: true });
     }
-
-    // Notify the other party
-    const otherUserId = isBorrower ? request.lender_id : request.borrower_id;
-    const myName = isBorrower ? request.borrower_name : request.lender_name;
-    createNotification(otherUserId, 'dispute_partial', `${myName} marked the dispute for "${request.item_name}" as resolved. Please confirm when you agree.`, rid).catch(console.error);
 
     res.json({ success: true, fullyResolved: false });
   } catch (err) {

@@ -127,7 +127,7 @@ export default function ItemDetailPage() {
                             <span>{days} day{days !== 1 ? 's' : ''} × €{item.price_per_day}/day</span>
                             <strong>= €{totalCost}</strong>
                             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                              Agree on payment method via chat after the owner accepts.
+                              Suggested price — arrange payment privately with the owner.
                             </p>
                           </>
                         ) : (
@@ -221,9 +221,13 @@ export default function ItemDetailPage() {
           <div className="sidebar-card">
             <div className="sidebar-card-title">Owner</div>
             <Link to={`/users/${item.owner_id}`} className="owner-profile-link">
-              <div className="owner-profile-avatar">
-                {item.owner_name?.charAt(0).toUpperCase()}
-              </div>
+              {item.owner_photo_url ? (
+                <img src={item.owner_photo_url} alt={item.owner_name} className="owner-profile-avatar owner-profile-avatar-img" />
+              ) : (
+                <div className="owner-profile-avatar">
+                  {item.owner_name?.charAt(0).toUpperCase()}
+                </div>
+              )}
               <div>
                 <div style={{ fontWeight: 600 }}>{item.owner_name}</div>
                 {item.owner_area && (

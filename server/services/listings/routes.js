@@ -9,7 +9,7 @@ function normalizeCategory(cat) {
   return cat.trim().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// FR-02: Create an item listing — location is taken from the owner's profile
+// FR-02: Create an item listing
 router.post('/', requireAuth, async (req, res) => {
   try {
     const { name, category, description, photoUrl, pricePerDay } = req.body;
@@ -18,17 +18,10 @@ router.post('/', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'name and category are required' });
     }
 
-    // Pull the owner's home location from their profile (NFR-04)
-    const userResult = await pool.query('SELECT lat, lng FROM users WHERE id = $1', [req.user.id]);
-    const owner = userResult.rows[0];
-    if (!owner || owner.lat == null || owner.lng == null) {
-      return res.status(400).json({ error: 'Please set your home location in your profile before creating a listing.' });
-    }
-
     const result = await pool.query(
-      `INSERT INTO items (owner_id, name, category, description, photo_url, price_per_day, status, lat, lng)
-       VALUES ($1, $2, $3, $4, $5, $6, 'available', $7, $8) RETURNING id`,
-      [req.user.id, name, normalizeCategory(category), description || null, photoUrl || null, pricePerDay || 0, owner.lat, owner.lng]
+      `INSERT INTO items (owner_id, name, category, description, photo_url, price_per_day, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'available') RETURNING id`,
+      [req.user.id, name, normalizeCategory(category), description || null, photoUrl || null, pricePerDay || 0]
     );
 
     res.status(201).json({ id: result.rows[0].id });
@@ -38,7 +31,7 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// FR-09: My listings (owner-only fields, including precise coordinates)
+// FR-09: My listings (owner-only)
 router.get('/mine', requireAuth, async (req, res) => {
   const result = await pool.query(
     'SELECT * FROM items WHERE owner_id = $1 ORDER BY created_at DESC',
@@ -48,15 +41,13 @@ router.get('/mine', requireAuth, async (req, res) => {
 });
 
 // FR-04: Item detail view
-// NFR-04: do not expose the owner's precise lat/lng to the viewer -- only
-// the neighborhood_area name. The owner can still see it via /mine.
 router.get('/:id', requireAuth, async (req, res) => {
   const result = await pool.query(
     `SELECT
        items.id, items.name, items.category, items.description, items.photo_url,
        items.status, items.price_per_day, items.created_at,
        users.id AS owner_id, users.display_name AS owner_name,
-       users.neighborhood_area AS owner_area
+       users.neighborhood_area AS owner_area, users.photo_url AS owner_photo_url
      FROM items
      JOIN users ON users.id = items.owner_id
      WHERE items.id = $1`,
@@ -65,7 +56,7 @@ router.get('/:id', requireAuth, async (req, res) => {
 
   if (!result.rows[0]) return res.status(404).json({ error: 'Item not found' });
 
-  // Booked date ranges (accepted, not yet past) for availability display
+  // Booked date ranges for availability display
   const bookedResult = await pool.query(
     `SELECT start_date, end_date FROM borrow_requests
      WHERE item_id = $1 AND status IN ('accepted', 'return_reported', 'disputed') AND end_date >= CURRENT_DATE

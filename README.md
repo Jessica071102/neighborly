@@ -3,6 +3,18 @@
 Hyperlocal borrowing platform — HWR Berlin, *Digital Literacy IV: Software
 Architecture* group project.
 
+## Architecture
+
+**Modular monolith** — plain REST request/response throughout. No WebSockets,
+no push notifications, no payment processing.
+
+| Decision | Choice | Reason |
+|---|---|---|
+| Chat delivery | REST GET + 4 s client poll | Fits Client-Server pattern taught in course |
+| Search | Neighbourhood text filter (ILIKE) | No coordinates collected (privacy); simpler than geolocation |
+| Payments | Display-only price field | Neighborly never touches money; parties settle privately |
+| Notifications | None — status page is the notification | `borrow_requests.status` tells each party what's happening |
+
 ## Quick start
 
 ### 1. Backend
@@ -10,13 +22,12 @@ Architecture* group project.
 ```bash
 cd server
 npm install
-cp .env.example .env
+cp .env.example .env   # fill in DATABASE_URL and JWT_SECRET
 npm run dev
 ```
 
-Server runs on http://localhost:4000. The SQLite database is created
-automatically at `server/db/neighborly.db` from `server/db/schema.sql` the
-first time it runs.
+Server runs on http://localhost:4000. The PostgreSQL schema is applied
+automatically from `server/db/schema.sql` on every startup (idempotent).
 
 ### 2. Frontend
 
@@ -28,39 +39,31 @@ npm run dev
 
 Open http://localhost:5173. API calls to `/api/*` are proxied to the backend.
 
-## Project structure
+## Services
 
 ```
-neighborly/
-├── CLAUDE.md              ← architecture & build-order context for Claude Code
-├── Neighborly_Project_Charter.docx
-├── server/
-│   ├── index.js           ← Express + Socket.io entry point
-│   ├── db/
-│   │   ├── schema.sql      ← table definitions
-│   │   └── db.js            ← SQLite connection, runs schema on boot
-│   ├── middleware/auth.js  ← JWT verification
-│   └── services/
-│       ├── auth/            (FR-01)
-│       ├── listings/        (FR-02, FR-04, FR-09)
-│       ├── search/          (FR-03)
-│       ├── requests/         (FR-05, FR-06)
-│       ├── messaging/        (FR-07)
-│       ├── ratings/          (FR-08)
-│       └── notifications/    (FR-10)
-└── client/                  ← React + Vite frontend
+server/services/
+├── auth/          FR-01  register · login · /me
+├── listings/      FR-02, FR-04, FR-09  item CRUD
+├── search/        FR-03  neighbourhood + keyword filter
+├── requests/      FR-05, FR-06  borrow request workflow
+├── messaging/     FR-07  REST history + REST send
+├── ratings/       FR-08  post-transaction reviews
+└── users/         public profiles · profile editing
 ```
 
-## Where to start
+## Key design notes
 
-Open this folder in Claude Code — it will read `CLAUDE.md` automatically and
-pick up from the build-order checklist there. The backend already has working
-endpoints for auth, listings, search, requests, messaging (sockets), and
-ratings; the main remaining work is building the React pages and wiring up
-notifications.
-
-## Requirements reference
-
-Full functional and non-functional requirements, stakeholders, and the
-execution plan for search/chat are documented in
-`Neighborly_Project_Charter.docx`.
+- **No lat/lng anywhere.** Search filters on the `neighborhood_area` text column
+  of the owner; no browser geolocation is used and no coordinates are stored.
+- **No payments table.** `price_per_day` and `deposit_cents` are display-only
+  labels the lender sets as a suggestion; all money moves privately between
+  the two people (classifieds-style).
+- **Chat is polling.** `ChatPage` polls `GET /api/messages/:requestId` every
+  4 seconds and sends via `POST`. No WebSocket connection is opened.
+- **Status is the notification.** When something happens to a request
+  (accepted, return reported, disputed, …) the status column updates and the
+  other party sees it the next time they open the Requests page.
+- **Condition photos (FR-11/FR-12).** Borrower must upload a return photo
+  before reporting a return; lender can then confirm or dispute. Mutual
+  acknowledgement required before a dispute clears.

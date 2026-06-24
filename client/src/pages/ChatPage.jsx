@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { ChevronLeftIcon, SendIcon, TrashIcon } from '../components/Icons';
+
+const POLL_INTERVAL = 4000; // ms
 
 function timeLabel(ts) {
   const d = new Date(ts);
@@ -13,7 +14,7 @@ function timeLabel(ts) {
 export default function ChatPage() {
   const { requestId } = useParams();
   const navigate = useNavigate();
-  const { user, token } = useAuth();
+  const { user } = useAuth();
 
   const [messages, setMessages] = useState([]);
   const [request, setRequest] = useState(null);
@@ -21,14 +22,13 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sendError, setSendError] = useState('');
-  const [socketConnected, setSocketConnected] = useState(false);
   const [swipedId, setSwipedId] = useState(null);
-  const socketRef = useRef(null);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const swipeStartX = useRef(0);
   const justSwipedRef = useRef(false);
 
+  // Initial load
   useEffect(() => {
     Promise.all([
       api.get('/requests/mine'),
@@ -37,53 +37,49 @@ export default function ChatPage() {
       const found = reqData.requests.find((r) => String(r.id) === String(requestId));
       setRequest(found || null);
       setMessages(msgData.messages);
-      // Mark notifications for this chat as read and refresh the badge
-      api.put(`/notifications/read-by-request/${requestId}`, {})
-        .then(() => window.dispatchEvent(new CustomEvent('notif-refresh')))
-        .catch(() => {});
     }).catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [requestId]);
 
+  // Short-poll for new messages every 4 s
   useEffect(() => {
-    if (!token) return;
-    const socket = io(import.meta.env.VITE_API_BASE_URL || undefined, { auth: { token } });
-    socketRef.current = socket;
-
-    socket.emit('join', Number(requestId));
-    socket.on('connect', () => setSocketConnected(true));
-    socket.on('disconnect', () => setSocketConnected(false));
-    setSocketConnected(socket.connected);
-
-    socket.on('message', (msg) => {
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
-    });
-
-    socket.on('message_deleted', ({ messageId }) => {
-      setMessages((prev) => prev.filter((m) => m.id !== messageId));
-    });
-
-    return () => socket.disconnect();
-  }, [requestId, token]);
+    const id = setInterval(async () => {
+      const data = await api.get(`/messages/${requestId}`).catch(() => null);
+      if (data) setMessages(data.messages);
+    }, POLL_INTERVAL);
+    return () => clearInterval(id);
+  }, [requestId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  function sendMessage() {
+  async function sendMessage() {
     const content = text.trim();
     if (!content) return;
-    if (!socketRef.current?.connected) {
-      setSendError('Not connected — please wait and try again.');
-      return;
-    }
     setSendError('');
-    socketRef.current.emit('message', { requestId: Number(requestId), content });
+
+    // Optimistic append
+    const tmp = {
+      id: `tmp-${Date.now()}`,
+      sender_id: user?.id,
+      sender_name: user?.display_name,
+      content,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, tmp]);
     setText('');
     textareaRef.current?.focus();
+
+    try {
+      await api.post(`/messages/${requestId}`, { content });
+      // Refresh to get the server-assigned id and timestamp
+      const data = await api.get(`/messages/${requestId}`);
+      setMessages(data.messages);
+    } catch (err) {
+      setSendError(err.message);
+      setMessages((prev) => prev.filter((m) => m.id !== tmp.id));
+    }
   }
 
   function handleKey(e) {
@@ -94,15 +90,12 @@ export default function ChatPage() {
   }
 
   async function handleDelete(msgId) {
-    // Optimistic remove
     setMessages((prev) => prev.filter((m) => m.id !== msgId));
     setSwipedId(null);
     try {
       await api.delete(`/messages/${msgId}`);
-      // Notify the other participant's open chat via socket
-      socketRef.current?.emit('delete_message', { messageId: msgId });
     } catch {
-      // Restore on failure by re-fetching
+      // Restore on failure
       const data = await api.get(`/messages/${requestId}`).catch(() => null);
       if (data) setMessages(data.messages);
     }
@@ -110,7 +103,6 @@ export default function ChatPage() {
 
   function onTouchStart(e, msgId) {
     swipeStartX.current = e.touches[0].clientX;
-    // close any other open swipe
     if (swipedId && swipedId !== msgId) setSwipedId(null);
   }
 
@@ -149,12 +141,6 @@ export default function ChatPage() {
           )}
         </div>
       </div>
-
-      {!socketConnected && !loading && (
-        <div style={{ background: '#FEF3C7', borderBottom: '1px solid #FDE68A', padding: '6px 16px', fontSize: 13, textAlign: 'center', color: '#92400E' }}>
-          Reconnecting…
-        </div>
-      )}
 
       <div className="chat-messages">
         {messages.length === 0 && (

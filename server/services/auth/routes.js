@@ -9,7 +9,7 @@ const router = express.Router();
 // FR-01: User registration
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, displayName, neighborhoodArea, lat, lng } = req.body;
+    const { email, password, displayName, neighborhoodArea } = req.body;
 
     if (!email || !password || !displayName) {
       return res.status(400).json({ error: 'email, password and displayName are required' });
@@ -24,9 +24,9 @@ router.post('/register', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, display_name, neighborhood_area, lat, lng)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [email, passwordHash, displayName, neighborhoodArea || null, lat ?? null, lng ?? null]
+      `INSERT INTO users (email, password_hash, display_name, neighborhood_area)
+       VALUES ($1, $2, $3, $4) RETURNING id`,
+      [email, passwordHash, displayName, neighborhoodArea || null]
     );
 
     const id = result.rows[0].id;
@@ -76,12 +76,10 @@ router.post('/login', async (req, res) => {
 });
 
 // FR-01: Current user profile
-// NFR-04: returns the user's OWN coordinates only (needed for search radius
-// queries) -- this endpoint must never be used to look up other users.
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, email, display_name, photo_url, neighborhood_area, bio, preferences, lat, lng FROM users WHERE id = $1',
+      'SELECT id, email, display_name, photo_url, neighborhood_area, bio, preferences FROM users WHERE id = $1',
       [req.user.id]
     );
 

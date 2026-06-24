@@ -25,7 +25,7 @@ export default function PrivacyPage() {
       <h2>How we use your data</h2>
       <ul>
         <li>To operate the platform — matching borrowers with lenders nearby.</li>
-        <li>To send in-app notifications about your requests and messages.</li>
+        <li>To manage your borrow requests and facilitate chat between borrowers and lenders.</li>
         <li>To display your public profile (name, neighbourhood area, and ratings) to other users.</li>
       </ul>
 

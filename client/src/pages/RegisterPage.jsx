@@ -2,38 +2,17 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
-import { LocateIcon } from '../components/Icons';
-import { reverseGeocode } from '../utils/geo';
 
 export default function RegisterPage() {
   const { login } = useAuth();
   const [form, setForm] = useState({
     email: '', password: '', displayName: '', neighborhoodArea: '',
   });
-  const [location, setLocation] = useState(null);
-  const [locLabel, setLocLabel] = useState('');
-  const [locLoading, setLocLoading] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   function set(field) {
     return (e) => setForm({ ...form, [field]: e.target.value });
-  }
-
-  function getLocation() {
-    if (!navigator.geolocation) { setError('Geolocation not supported in this browser'); return; }
-    setLocLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        setLocation({ lat, lng });
-        setLocLabel(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-        const area = await reverseGeocode(lat, lng);
-        if (area) setForm((f) => ({ ...f, neighborhoodArea: area }));
-        setLocLoading(false);
-      },
-      () => { setError('Could not get location. You can continue without it.'); setLocLoading(false); }
-    );
   }
 
   async function handleSubmit(e) {
@@ -44,8 +23,7 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      const body = { ...form, ...(location || {}) };
-      const data = await api.post('/auth/register', body);
+      const data = await api.post('/auth/register', form);
       login(data.token, data.user, '/profile/setup');
     } catch (err) {
       setError(err.message);
@@ -80,22 +58,10 @@ export default function RegisterPage() {
               value={form.password} onChange={set('password')} required minLength={8} maxLength={100} />
           </div>
           <div className="form-group">
-            <label className="form-label">Neighborhood (optional)</label>
+            <label className="form-label">Neighbourhood (optional)</label>
             <input className="form-input" placeholder="e.g. Prenzlauer Berg"
               value={form.neighborhoodArea} onChange={set('neighborhoodArea')} maxLength={60} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Your location (optional)</label>
-            <button
-              type="button"
-              className={`location-pill${location ? ' active' : ''}`}
-              onClick={getLocation}
-              disabled={locLoading}
-            >
-              <LocateIcon size={14} />
-              {locLoading ? 'Detecting…' : location ? locLabel : 'Use my location'}
-            </button>
-            <p className="form-hint">Enables distance-based search results for others.</p>
+            <p className="form-hint">Helps neighbours find your listings. You can add or change this later.</p>
           </div>
 
           <button type="submit" className="btn btn-primary btn-full btn-lg"

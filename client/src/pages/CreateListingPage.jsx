@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
-import { useAuth } from '../context/AuthContext';
 import PhotoInput from '../components/PhotoInput';
 
 const CATEGORY_SUGGESTIONS = [
@@ -11,7 +10,6 @@ const CATEGORY_SUGGESTIONS = [
 
 export default function CreateListingPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [form, setForm] = useState({
     name: '', category: '', description: '', photoUrl: '', pricePerDay: 0,
   });
@@ -37,12 +35,7 @@ export default function CreateListingPage() {
       });
       navigate('/my-listings');
     } catch (err) {
-      // Backend returns 400 when the user hasn't set a home location yet
-      if (err.message.includes('home location')) {
-        setError('Please set your home location in your profile first. Your listing location is taken from there.');
-      } else {
-        setError(err.message);
-      }
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -54,13 +47,6 @@ export default function CreateListingPage() {
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
         Share something you rarely use with your neighbours.
       </p>
-
-      {!user?.lat && (
-        <div className="info-box" style={{ marginBottom: 16 }}>
-          Your listing location is taken from your home address.{' '}
-          <Link to="/profile/edit">Set your home location</Link> before listing, or the item won't appear in search results.
-        </div>
-      )}
 
       {error && <div className="error-box">{error}</div>}
 
@@ -105,13 +91,13 @@ export default function CreateListingPage() {
             />
             <span className="price-input-suffix">/ day</span>
           </div>
-          <p className="form-hint">Set to 0 for free lending. Agree on payment via chat.</p>
+          <p className="form-hint">Set to 0 for free lending. Any price is suggested display-only — arranged privately between you and the borrower.</p>
         </div>
 
         <p className="form-hint" style={{ marginBottom: 16 }}>
-          Your listing location is taken from your{' '}
-          <Link to="/profile/edit" style={{ color: 'var(--green)', fontWeight: 600 }}>profile home location</Link>.
-          Neighbours will see your neighbourhood, not your exact address.
+          Your listing appears in your neighbourhood. Make sure your{' '}
+          <Link to="/profile/edit" style={{ color: 'var(--green)', fontWeight: 600 }}>profile neighbourhood</Link>
+          {' '}is set so neighbours can find your item.
         </p>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>

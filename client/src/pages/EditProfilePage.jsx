@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 import PhotoInput from '../components/PhotoInput';
-import { LocateIcon } from '../components/Icons';
-import { reverseGeocode } from '../utils/geo';
 
 const PREFERENCE_SUGGESTIONS = [
   'Pick up only', 'Can deliver nearby', 'Cash payment preferred',
@@ -13,8 +11,6 @@ const PREFERENCE_SUGGESTIONS = [
 
 function ProfileForm({ form, setForm, error, loading, onSubmit, isSetup }) {
   const navigate = useNavigate();
-  const [locLoading, setLocLoading] = useState(false);
-  const [locError, setLocError] = useState('');
 
   function set(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -25,22 +21,6 @@ function ProfileForm({ form, setForm, error, loading, onSubmit, isSetup }) {
     if (current.includes(pref)) return;
     const next = current ? `${current} · ${pref}` : pref;
     setForm((f) => ({ ...f, preferences: next }));
-  }
-
-  function detectLocation() {
-    if (!navigator.geolocation) { setLocError('Geolocation not supported by your browser'); return; }
-    setLocLoading(true);
-    setLocError('');
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        setForm((f) => ({ ...f, lat, lng }));
-        const area = await reverseGeocode(lat, lng);
-        if (area) setForm((f) => ({ ...f, neighborhoodArea: area }));
-        setLocLoading(false);
-      },
-      () => { setLocError('Could not get location. Please allow location access.'); setLocLoading(false); }
-    );
   }
 
   return (
@@ -62,6 +42,7 @@ function ProfileForm({ form, setForm, error, loading, onSubmit, isSetup }) {
         <label className="form-label">Neighbourhood</label>
         <input className="form-input" placeholder="e.g. Prenzlauer Berg"
           value={form.neighborhoodArea} onChange={set('neighborhoodArea')} maxLength={60} />
+        <p className="form-hint">Used to show your listings to nearby neighbours. Your exact address is never shared.</p>
       </div>
 
       <div className="form-group">
@@ -72,22 +53,6 @@ function ProfileForm({ form, setForm, error, loading, onSubmit, isSetup }) {
           value={form.bio} onChange={set('bio')} rows={3} maxLength={250}
         />
         <span className="char-count">{form.bio.length}/250</span>
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">Home location</label>
-        <button type="button"
-          className={`location-pill${form.lat ? ' active' : ''}`}
-          onClick={detectLocation} disabled={locLoading}
-        >
-          <LocateIcon size={14} />
-          {locLoading ? 'Detecting…' : form.lat ? 'Location set — click to update' : 'Set my home location'}
-        </button>
-        {locError && <p className="form-hint" style={{ color: 'var(--error)' }}>{locError}</p>}
-        <p className="form-hint">
-          Used to calculate distance for your listings. Your exact address is never shown to others.
-          {form.lat && <span style={{ color: 'var(--green)' }}> ✓ Location saved</span>}
-        </p>
       </div>
 
       <div className="form-group">
@@ -132,8 +97,6 @@ export default function EditProfilePage({ isSetup = false }) {
     bio: user?.bio || '',
     preferences: user?.preferences || '',
     photoUrl: user?.photo_url || '',
-    lat: user?.lat || null,
-    lng: user?.lng || null,
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -149,8 +112,6 @@ export default function EditProfilePage({ isSetup = false }) {
         bio: form.bio || null,
         preferences: form.preferences || null,
         photoUrl: form.photoUrl || undefined,
-        lat: form.lat ?? undefined,
-        lng: form.lng ?? undefined,
       });
       await refreshUser();
       navigate(isSetup ? '/search' : '/profile');

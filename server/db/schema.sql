@@ -2,6 +2,8 @@
 -- Tables map to the Functional Requirements in the Project Charter.
 
 -- FR-01: Users
+-- NOTE: No lat/lng columns. Precise coordinates are not collected.
+-- Search filters by neighbourhood_area (text); no geolocation is used (NFR-04).
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
@@ -9,14 +11,14 @@ CREATE TABLE IF NOT EXISTS users (
   display_name TEXT NOT NULL,
   photo_url TEXT,
   neighborhood_area TEXT,        -- human-readable area, e.g. "Prenzlauer Berg"
-  lat FLOAT8,                    -- precise location, NEVER exposed to other users (NFR-04)
-  lng FLOAT8,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- FR-02, FR-04, FR-09: Item listings
 -- NOTE (NFR-06): `category` is intentionally free text, not an enum/constraint,
 -- so new categories can be added without schema or code changes.
+-- NOTE: No lat/lng columns. Item location is the owner's neighbourhood_area;
+-- no precise coordinates are stored.
 CREATE TABLE IF NOT EXISTS items (
   id SERIAL PRIMARY KEY,
   owner_id INTEGER NOT NULL REFERENCES users(id),
@@ -25,10 +27,13 @@ CREATE TABLE IF NOT EXISTS items (
   description TEXT,
   photo_url TEXT,
   status TEXT NOT NULL DEFAULT 'available', -- 'available' | 'unavailable'
-  lat FLOAT8 NOT NULL,
-  lng FLOAT8 NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- NOTE: There is intentionally no `payments` table.
+-- Neighborly never handles money. price_per_day is display-only information;
+-- any deposit or payment is arranged privately between lender and borrower
+-- (classifieds-style). This keeps the architecture simple and out of PCI scope.
 
 -- FR-05, FR-06: Borrow requests
 CREATE TABLE IF NOT EXISTS borrow_requests (
@@ -62,46 +67,10 @@ CREATE TABLE IF NOT EXISTS reviews (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- FR-10: Notifications
-CREATE TABLE IF NOT EXISTS notifications (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id),
-  type TEXT NOT NULL,             -- e.g. 'new_request' | 'request_accepted' | 'request_declined' | 'new_message' | 'review_prompt'
-  content TEXT NOT NULL,
-  is_read BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Schema migrations (idempotent -- safe to run on every startup)
-ALTER TABLE items ADD COLUMN IF NOT EXISTS price_per_day FLOAT8 NOT NULL DEFAULT 0;
-ALTER TABLE notifications ADD COLUMN IF NOT EXISTS request_id INTEGER REFERENCES borrow_requests(id);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences TEXT;
-
--- Migrate start_date/end_date from TEXT to DATE for type safety and query planner support
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'borrow_requests' AND column_name = 'start_date' AND data_type = 'text'
-  ) THEN
-    ALTER TABLE borrow_requests ALTER COLUMN start_date TYPE DATE USING start_date::DATE;
-    ALTER TABLE borrow_requests ALTER COLUMN end_date   TYPE DATE USING end_date::DATE;
-  END IF;
-END $$;
-
--- Migrate is_read from INTEGER to BOOLEAN (idempotent)
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'notifications' AND column_name = 'is_read' AND data_type = 'integer'
-  ) THEN
-    ALTER TABLE notifications ALTER COLUMN is_read DROP DEFAULT;
-    ALTER TABLE notifications ALTER COLUMN is_read TYPE BOOLEAN USING is_read::BOOLEAN;
-    ALTER TABLE notifications ALTER COLUMN is_read SET DEFAULT FALSE;
-  END IF;
-END $$;
+-- NOTE: There is intentionally no `notifications` table (FR-10 removed).
+-- The borrow_requests.status column is the notification: each party sees
+-- current transaction state on their Requests page. This keeps the
+-- architecture to plain REST request-response with no push mechanism.
 
 -- FR-11, FR-12: Condition photos for borrow requests (handover and return)
 CREATE TABLE IF NOT EXISTS request_photos (
@@ -113,6 +82,33 @@ CREATE TABLE IF NOT EXISTS request_photos (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Schema migrations (idempotent -- safe to run on every startup)
+ALTER TABLE items ADD COLUMN IF NOT EXISTS price_per_day FLOAT8 NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences TEXT;
+
+-- Remove precise location fields (architecture simplification: neighbourhood
+-- text filter replaces geolocation; no coordinates collected anywhere)
+ALTER TABLE users DROP COLUMN IF EXISTS lat;
+ALTER TABLE users DROP COLUMN IF EXISTS lng;
+ALTER TABLE items DROP COLUMN IF EXISTS lat;
+ALTER TABLE items DROP COLUMN IF EXISTS lng;
+
+-- Remove notifications subsystem (FR-10 cut: request status is the notification)
+DROP TABLE IF EXISTS notifications CASCADE;
+
+-- Migrate start_date/end_date from TEXT to DATE for type safety (idempotent)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'borrow_requests' AND column_name = 'start_date' AND data_type = 'text'
+  ) THEN
+    ALTER TABLE borrow_requests ALTER COLUMN start_date TYPE DATE USING start_date::DATE;
+    ALTER TABLE borrow_requests ALTER COLUMN end_date   TYPE DATE USING end_date::DATE;
+  END IF;
+END $$;
+
 -- FR-11: Track mutual dispute resolution — both parties must confirm before badge clears
 ALTER TABLE borrow_requests ADD COLUMN IF NOT EXISTS dispute_resolved_borrower BOOLEAN DEFAULT FALSE;
 ALTER TABLE borrow_requests ADD COLUMN IF NOT EXISTS dispute_resolved_lender BOOLEAN DEFAULT FALSE;
@@ -122,10 +118,10 @@ CREATE INDEX IF NOT EXISTS idx_request_photos_request ON request_photos(request_
 -- FR-08: enforce one review per reviewer per transaction at the DB level
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_review ON reviews (request_id, reviewer_id);
 
--- Indexes to support NFR-01 (search performance)
-CREATE INDEX IF NOT EXISTS idx_items_status ON items(status);
-CREATE INDEX IF NOT EXISTS idx_requests_item ON borrow_requests(item_id);
+-- Indexes for query performance (NFR-01)
+CREATE INDEX IF NOT EXISTS idx_items_status    ON items(status);
+CREATE INDEX IF NOT EXISTS idx_items_owner     ON items(owner_id);
+CREATE INDEX IF NOT EXISTS idx_requests_item   ON borrow_requests(item_id);
 CREATE INDEX IF NOT EXISTS idx_requests_borrower ON borrow_requests(borrower_id);
-CREATE INDEX IF NOT EXISTS idx_requests_lender ON borrow_requests(lender_id);
-CREATE INDEX IF NOT EXISTS idx_messages_request ON messages(request_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_requests_lender   ON borrow_requests(lender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_request  ON messages(request_id);

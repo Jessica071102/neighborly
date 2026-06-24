@@ -15,16 +15,10 @@ export default function ListingCard({ item }) {
         <div className="listing-card-name">{item.name}</div>
         <div className="listing-card-meta">
           <span>{item.category}</span>
-          {item.distanceKm != null && (
-            <>
-              <span className="listing-card-meta-dot" />
-              <MapPinIcon size={12} />
-              <span>{item.distanceKm} km</span>
-            </>
-          )}
           {item.owner_area && (
             <>
               <span className="listing-card-meta-dot" />
+              <MapPinIcon size={12} />
               <span>{item.owner_area}</span>
             </>
           )}

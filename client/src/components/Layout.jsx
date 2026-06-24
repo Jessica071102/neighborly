@@ -1,40 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../api';
 import {
-  SearchIcon, ListIcon, InboxIcon, BellIcon, UserIcon, LogOutIcon
+  SearchIcon, ListIcon, InboxIcon, UserIcon, LogOutIcon
 } from './Icons';
 
 const NAV_LINKS = [
-  { to: '/search', label: 'Search', Icon: SearchIcon, exact: true },
-  { to: '/my-listings', label: 'My Listings', Icon: ListIcon },
-  { to: '/requests', label: 'Requests', Icon: InboxIcon },
+  { to: '/search',      label: 'Search',      Icon: SearchIcon, exact: true },
+  { to: '/my-listings', label: 'My Listings',  Icon: ListIcon },
+  { to: '/requests',    label: 'Requests',     Icon: InboxIcon },
 ];
-
-function useUnreadCount() {
-  const [count, setCount] = useState(0);
-  const { user } = useAuth();
-  const location = useLocation();
-
-  function refresh() {
-    api.get('/notifications')
-      .then((d) => setCount(d.notifications.filter((n) => !n.is_read).length))
-      .catch(() => {});
-  }
-
-  useEffect(() => {
-    if (!user) return;
-    refresh();
-  }, [user, location.pathname]); // re-fetch on every navigation
-
-  useEffect(() => {
-    window.addEventListener('notif-refresh', refresh);
-    return () => window.removeEventListener('notif-refresh', refresh);
-  }, []);
-
-  return count;
-}
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
@@ -42,7 +17,6 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropRef = useRef(null);
-  const unread = useUnreadCount();
 
   const initials = user?.display_name
     ? user.display_name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -81,22 +55,15 @@ export default function Layout({ children }) {
         </div>
 
         <div className="nav-right">
-          <button
-            className={`nav-icon-btn${location.pathname === '/notifications' ? ' active' : ''}`}
-            onClick={() => navigate('/notifications')}
-            title="Notifications"
-          >
-            <BellIcon size={20} />
-            {unread > 0 && <span className="nav-badge">{unread > 9 ? '9+' : unread}</span>}
-          </button>
-
           <div className="nav-dropdown-wrap" ref={dropRef}>
             <button
               className="nav-avatar"
               onClick={() => setDropdownOpen((o) => !o)}
               title="Account"
             >
-              {initials}
+              {user?.photo_url
+                ? <img src={user.photo_url} alt={user.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                : initials}
             </button>
             {dropdownOpen && (
               <div className="nav-dropdown">
@@ -129,14 +96,6 @@ export default function Layout({ children }) {
             <span className="bottom-tab-label">{label}</span>
           </button>
         ))}
-        <button
-          className={`bottom-tab${location.pathname === '/notifications' ? ' active' : ''}`}
-          onClick={() => navigate('/notifications')}
-        >
-          <BellIcon size={22} />
-          {unread > 0 && <span className="bottom-tab-badge">{unread > 9 ? '9+' : unread}</span>}
-          <span className="bottom-tab-label">Alerts</span>
-        </button>
         <button
           className={`bottom-tab${location.pathname === '/profile' ? ' active' : ''}`}
           onClick={() => navigate('/profile')}

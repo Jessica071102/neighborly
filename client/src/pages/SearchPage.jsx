@@ -15,22 +15,24 @@ export default function SearchPage() {
   const { user } = useAuth();
   const saved = loadSession();
   const [query, setQuery] = useState(saved.query ?? '');
-  const [radius, setRadius] = useState(saved.radius ?? 2);
+  // Pre-fill neighbourhood from the user's profile but let them clear/change it
+  const [neighborhood, setNeighborhood] = useState(
+    saved.neighborhood !== undefined ? saved.neighborhood : (user?.neighborhood_area || '')
+  );
   const [items, setItems] = useState([]);
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const hasHomeLocation = user?.lat && user?.lng;
-
   useEffect(() => {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ query, radius }));
-  }, [query, radius]);
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ query, neighborhood }));
+  }, [query, neighborhood]);
 
-  const runSearch = useCallback(async (lat, lng, q, r) => {
+  const runSearch = useCallback(async (q, nb) => {
     setSearching(true);
     try {
-      const params = new URLSearchParams({ lat, lng, radiusKm: r });
+      const params = new URLSearchParams();
       if (q) params.set('q', q);
+      if (nb) params.set('neighborhood', nb);
       const data = await api.get(`/search?${params}`);
       setItems(data.items);
       setSearched(true);
@@ -41,11 +43,11 @@ export default function SearchPage() {
     }
   }, []);
 
+  // Debounce searches as the user types
   useEffect(() => {
-    if (!hasHomeLocation) return;
-    const t = setTimeout(() => runSearch(user.lat, user.lng, query, radius), 400);
+    const t = setTimeout(() => runSearch(query, neighborhood), 350);
     return () => clearTimeout(t);
-  }, [user?.lat, user?.lng, query, radius, runSearch, hasHomeLocation]);
+  }, [query, neighborhood, runSearch]);
 
   return (
     <div className="container-wide">
@@ -56,88 +58,63 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {!hasHomeLocation ? (
-        <div className="search-onboarding">
-          <h3>Set your home location first</h3>
-          <p>Your home location is used to find items nearby. Add it to your profile to start browsing.</p>
-          <div className="search-onboarding-steps">
-            <div className="search-onboarding-step">
-              <span className="search-onboarding-step-num">1</span>
-              Set your home location in your profile
-            </div>
-            <div className="search-onboarding-step">
-              <span className="search-onboarding-step-num">2</span>
-              Search or browse items
-            </div>
-            <div className="search-onboarding-step">
-              <span className="search-onboarding-step-num">3</span>
-              Send a borrow request
-            </div>
-          </div>
-          <Link to="/profile/edit" className="btn btn-primary">
-            <MapPinIcon size={15} />
-            Set home location
-          </Link>
+      <div className="search-controls">
+        <div className="search-input-wrap">
+          <SearchIcon size={18} />
+          <input
+            className="search-input"
+            placeholder="Search for drills, cameras, bikes…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            maxLength={60}
+          />
         </div>
-      ) : (
-        <>
-          <div className="search-controls">
-            <div className="search-input-wrap">
-              <SearchIcon size={18} />
-              <input
-                className="search-input"
-                placeholder="Search for drills, cameras, bikes…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                maxLength={60}
-              />
-            </div>
 
-            <div className="radius-control">
-              <MapPinIcon size={14} />
-              <input
-                type="range" min={1} max={10} step={0.5}
-                value={radius}
-                onChange={(e) => setRadius(Number(e.target.value))}
-              />
-              <span style={{ minWidth: 36 }}>{radius} km</span>
+        <div className="search-input-wrap" style={{ flex: '0 1 220px' }}>
+          <MapPinIcon size={16} />
+          <input
+            className="search-input"
+            placeholder="Neighbourhood, e.g. Kreuzberg"
+            value={neighborhood}
+            onChange={(e) => setNeighborhood(e.target.value)}
+            maxLength={60}
+          />
+        </div>
+      </div>
+
+      {searching && (
+        <div className="loading"><div className="spinner" />Searching…</div>
+      )}
+
+      {!searching && searched && (
+        items.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon"><PackageIcon size={44} /></div>
+            <h3>Nothing found</h3>
+            <p>Try a different keyword or clear the neighbourhood filter to browse everything.</p>
+            <div className="empty-state-actions">
+              <Link to="/items/create" className="btn btn-primary">List an item</Link>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Hey! I'm using Neighborly to share and borrow items in our neighbourhood. Join for free: ${window.location.origin}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline"
+              >
+                Invite neighbours
+              </a>
             </div>
           </div>
-
-          {searching && (
-            <div className="loading"><div className="spinner" />Looking nearby…</div>
-          )}
-
-          {!searching && searched && (
-            items.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-icon"><PackageIcon size={44} /></div>
-                <h3>Nothing found nearby yet</h3>
-                <p>Be the first to share something in your area — or invite your neighbours to join.</p>
-                <div className="empty-state-actions">
-                  <Link to="/items/create" className="btn btn-primary">List an item</Link>
-                  <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`Hey! I'm using Neighborly to share and borrow items in our neighbourhood. Join for free: ${window.location.origin}`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-outline"
-                  >
-                    Invite neighbours
-                  </a>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-                  {items.length} item{items.length !== 1 ? 's' : ''} within {radius} km
-                </p>
-                <div className="listings-grid">
-                  {items.map((item) => <ListingCard key={item.id} item={item} />)}
-                </div>
-              </>
-            )
-          )}
-        </>
+        ) : (
+          <>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+              {items.length} item{items.length !== 1 ? 's' : ''} found
+              {neighborhood ? ` in ${neighborhood}` : ''}
+            </p>
+            <div className="listings-grid">
+              {items.map((item) => <ListingCard key={item.id} item={item} />)}
+            </div>
+          </>
+        )
       )}
     </div>
   );

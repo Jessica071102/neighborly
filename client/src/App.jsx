@@ -12,7 +12,6 @@ import CreateListingPage from './pages/CreateListingPage';
 import MyListingsPage from './pages/MyListingsPage';
 import RequestsPage from './pages/RequestsPage';
 import ChatPage from './pages/ChatPage';
-import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import PrivacyPage from './pages/PrivacyPage';
@@ -34,7 +33,6 @@ function AppRoutes() {
       <Route path="/my-listings" element={<ProtectedRoute><Layout><MyListingsPage /></Layout></ProtectedRoute>} />
       <Route path="/requests" element={<ProtectedRoute><Layout><RequestsPage /></Layout></ProtectedRoute>} />
       <Route path="/chat/:requestId" element={<ProtectedRoute><Layout><ChatPage /></Layout></ProtectedRoute>} />
-      <Route path="/notifications" element={<ProtectedRoute><Layout><NotificationsPage /></Layout></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Layout><ProfilePage /></Layout></ProtectedRoute>} />
       <Route path="/profile/setup" element={<ProtectedRoute><EditProfilePage isSetup={true} /></ProtectedRoute>} />
       <Route path="/profile/edit" element={<ProtectedRoute><Layout><EditProfilePage /></Layout></ProtectedRoute>} />

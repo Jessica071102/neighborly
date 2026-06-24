@@ -1587,6 +1587,9 @@ input, textarea, select { font-family: inherit; }
   font-weight: 700; font-size: 15px; flex-shrink: 0;
   transition: background 0.15s, color 0.15s;
 }
+.owner-profile-avatar-img {
+  object-fit: cover; background: var(--border);
+}
 
 /* ── Notification clickable & delete ── */
 .notif-item-clickable { cursor: pointer; }
