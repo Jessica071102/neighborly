@@ -82,6 +82,15 @@ CREATE TABLE IF NOT EXISTS request_photos (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- FR-03: Neighbourhood reference table — centroid coordinates for Haversine distance.
+-- Privacy-preserving: all distance calculations use area centroids, not user GPS (NFR-04).
+CREATE TABLE IF NOT EXISTS neighborhoods (
+  id   SERIAL PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  lat  FLOAT8 NOT NULL,
+  lng  FLOAT8 NOT NULL
+);
+
 -- Schema migrations (idempotent -- safe to run on every startup)
 ALTER TABLE items ADD COLUMN IF NOT EXISTS price_per_day FLOAT8 NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;
@@ -118,7 +127,27 @@ CREATE INDEX IF NOT EXISTS idx_request_photos_request ON request_photos(request_
 -- FR-08: enforce one review per reviewer per transaction at the DB level
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_review ON reviews (request_id, reviewer_id);
 
+-- Seed Berlin neighbourhood centroids (idempotent)
+INSERT INTO neighborhoods (name, lat, lng) VALUES
+  ('Charlottenburg',  52.5168, 13.3044),
+  ('Friedrichshain',  52.5153, 13.4534),
+  ('Kreuzberg',       52.4987, 13.4043),
+  ('Mitte',           52.5200, 13.4050),
+  ('Neukölln',        52.4806, 13.4322),
+  ('Pankow',          52.5688, 13.4030),
+  ('Prenzlauer Berg', 52.5390, 13.4135),
+  ('Schöneberg',      52.4847, 13.3633),
+  ('Spandau',         52.5351, 13.2006),
+  ('Steglitz',        52.4573, 13.3212),
+  ('Tempelhof',       52.4729, 13.4088),
+  ('Wedding',         52.5490, 13.3730)
+ON CONFLICT (name) DO NOTHING;
+
+-- Link users to their neighbourhood for Haversine distance computation
+ALTER TABLE users ADD COLUMN IF NOT EXISTS neighborhood_id INTEGER REFERENCES neighborhoods(id);
+
 -- Indexes for query performance (NFR-01)
+CREATE INDEX IF NOT EXISTS idx_users_neighborhood ON users(neighborhood_id);
 CREATE INDEX IF NOT EXISTS idx_items_status    ON items(status);
 CREATE INDEX IF NOT EXISTS idx_items_owner     ON items(owner_id);
 CREATE INDEX IF NOT EXISTS idx_requests_item   ON borrow_requests(item_id);

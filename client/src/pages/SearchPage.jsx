@@ -109,6 +109,7 @@ export default function SearchPage() {
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
               {items.length} item{items.length !== 1 ? 's' : ''} found
               {neighborhood ? ` in ${neighborhood}` : ''}
+              {items.some((i) => i.distance_km != null) ? ' · sorted by distance' : ''}
             </p>
             <div className="listings-grid">
               {items.map((item) => <ListingCard key={item.id} item={item} />)}

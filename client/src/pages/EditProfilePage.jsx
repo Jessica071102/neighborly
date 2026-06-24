@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
@@ -9,11 +9,21 @@ const PREFERENCE_SUGGESTIONS = [
   'Bank transfer only', 'Free to borrow', 'Weekends only', 'Weekdays only',
 ];
 
-function ProfileForm({ form, setForm, error, loading, onSubmit, isSetup }) {
+function ProfileForm({ form, setForm, neighborhoods, error, loading, onSubmit, isSetup }) {
   const navigate = useNavigate();
 
   function set(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
+  }
+
+  function handleNeighborhoodChange(e) {
+    const id = e.target.value;
+    const selected = neighborhoods.find((n) => String(n.id) === id);
+    setForm((f) => ({
+      ...f,
+      neighborhoodId: id,
+      neighborhoodArea: selected ? selected.name : f.neighborhoodArea,
+    }));
   }
 
   function addPreference(pref) {
@@ -40,8 +50,16 @@ function ProfileForm({ form, setForm, error, loading, onSubmit, isSetup }) {
 
       <div className="form-group">
         <label className="form-label">Neighbourhood</label>
-        <input className="form-input" placeholder="e.g. Prenzlauer Berg"
-          value={form.neighborhoodArea} onChange={set('neighborhoodArea')} maxLength={60} />
+        <select
+          className="form-input"
+          value={form.neighborhoodId}
+          onChange={handleNeighborhoodChange}
+        >
+          <option value="">Select neighbourhood…</option>
+          {neighborhoods.map((n) => (
+            <option key={n.id} value={n.id}>{n.name}</option>
+          ))}
+        </select>
         <p className="form-hint">Used to show your listings to nearby neighbours. Your exact address is never shared.</p>
       </div>
 
@@ -91,15 +109,23 @@ export default function EditProfilePage({ isSetup = false }) {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 
+  const [neighborhoods, setNeighborhoods] = useState([]);
   const [form, setForm] = useState({
     displayName: user?.display_name || '',
     neighborhoodArea: user?.neighborhood_area || '',
+    neighborhoodId: user?.neighborhood_id ? String(user.neighborhood_id) : '',
     bio: user?.bio || '',
     preferences: user?.preferences || '',
     photoUrl: user?.photo_url || '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    api.get('/neighborhoods')
+      .then((d) => setNeighborhoods(d.neighborhoods))
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -109,6 +135,7 @@ export default function EditProfilePage({ isSetup = false }) {
       await api.put('/users/me', {
         displayName: form.displayName || undefined,
         neighborhoodArea: form.neighborhoodArea || undefined,
+        neighborhoodId: form.neighborhoodId ? Number(form.neighborhoodId) : undefined,
         bio: form.bio || null,
         preferences: form.preferences || null,
         photoUrl: form.photoUrl || undefined,
@@ -133,6 +160,7 @@ export default function EditProfilePage({ isSetup = false }) {
           </p>
           <ProfileForm
             form={form} setForm={setForm}
+            neighborhoods={neighborhoods}
             error={error} loading={loading}
             onSubmit={handleSubmit} isSetup
           />
@@ -152,6 +180,7 @@ export default function EditProfilePage({ isSetup = false }) {
       <div className="card">
         <ProfileForm
           form={form} setForm={setForm}
+          neighborhoods={neighborhoods}
           error={error} loading={loading}
           onSubmit={handleSubmit} isSetup={false}
         />

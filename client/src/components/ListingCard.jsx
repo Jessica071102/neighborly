@@ -22,6 +22,12 @@ export default function ListingCard({ item }) {
               <span>{item.owner_area}</span>
             </>
           )}
+          {item.distance_km != null && (
+            <>
+              <span className="listing-card-meta-dot" />
+              <span>~{item.distance_km} km</span>
+            </>
+          )}
         </div>
         <div className="listing-card-price">
           {item.price_per_day > 0

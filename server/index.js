@@ -13,6 +13,7 @@ const requestsRoutes = require('./services/requests/routes');
 const messagingRoutes = require('./services/messaging/routes');
 const ratingsRoutes = require('./services/ratings/routes');
 const usersRoutes = require('./services/users/routes');
+const neighborhoodsRoutes = require('./services/neighborhoods/routes');
 
 // Prevent an unhandled rejection in any async route from crashing the process
 process.on('unhandledRejection', (reason) => {
@@ -65,6 +66,7 @@ app.use('/api/requests', requestsRoutes); // FR-05, FR-06
 app.use('/api/messages', messagingRoutes); // FR-07
 app.use('/api/reviews', ratingsRoutes); // FR-08
 app.use('/api/users', usersRoutes);     // public profiles + profile editing
+app.use('/api/neighborhoods', neighborhoodsRoutes); // FR-03: reference list for dropdowns
 
 // Serve the built React client in production (same-origin, no CORS needed)
 const clientDist = path.join(__dirname, '../client/dist');

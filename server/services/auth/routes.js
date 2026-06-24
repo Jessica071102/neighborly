@@ -9,7 +9,7 @@ const router = express.Router();
 // FR-01: User registration
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, displayName, neighborhoodArea } = req.body;
+    const { email, password, displayName, neighborhoodArea, neighborhoodId } = req.body;
 
     if (!email || !password || !displayName) {
       return res.status(400).json({ error: 'email, password and displayName are required' });
@@ -24,9 +24,9 @@ router.post('/register', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, display_name, neighborhood_area)
-       VALUES ($1, $2, $3, $4) RETURNING id`,
-      [email, passwordHash, displayName, neighborhoodArea || null]
+      `INSERT INTO users (email, password_hash, display_name, neighborhood_area, neighborhood_id)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [email, passwordHash, displayName, neighborhoodArea || null, neighborhoodId || null]
     );
 
     const id = result.rows[0].id;
@@ -34,7 +34,12 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       token,
-      user: { id, email, display_name: displayName, neighborhood_area: neighborhoodArea || null }
+      user: {
+        id, email,
+        display_name: displayName,
+        neighborhood_area: neighborhoodArea || null,
+        neighborhood_id: neighborhoodId || null,
+      }
     });
   } catch (err) {
     console.error('POST /auth/register error:', err);
@@ -79,7 +84,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, email, display_name, photo_url, neighborhood_area, bio, preferences FROM users WHERE id = $1',
+      'SELECT id, email, display_name, photo_url, neighborhood_area, neighborhood_id, bio, preferences FROM users WHERE id = $1',
       [req.user.id]
     );
 
