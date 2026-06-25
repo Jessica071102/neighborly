@@ -11,7 +11,7 @@ no push notifications, no payment processing.
 | Decision | Choice | Reason |
 |---|---|---|
 | Chat delivery | REST GET + 4 s client poll | Fits Client-Server pattern taught in course |
-| Search | Neighbourhood text filter (ILIKE) | No coordinates collected (privacy); simpler than geolocation |
+| Search | Neighbourhood centroid distance (Haversine) + keyword filter | No browser GPS; distance calculated between neighbourhood centroids |
 | Payments | Display-only price field | Neighborly never touches money; parties settle privately |
 | Notifications | None — status page is the notification | `borrow_requests.status` tells each party what's happening |
 
@@ -45,8 +45,8 @@ Open http://localhost:5173. API calls to `/api/*` are proxied to the backend.
 server/services/
 ├── auth/          FR-01  register · login · /me
 ├── listings/      FR-02, FR-04, FR-09  item CRUD
-├── search/        FR-03  neighbourhood + keyword filter
-├── requests/      FR-05, FR-06  borrow request workflow
+├── search/        FR-03  neighbourhood centroid distance + keyword filter + radius
+├── requests/      FR-05, FR-06, FR-11, FR-12  borrow request workflow + return/dispute + condition photos
 ├── messaging/     FR-07  REST history + REST send
 ├── ratings/       FR-08  post-transaction reviews
 └── users/         public profiles · profile editing
@@ -54,8 +54,10 @@ server/services/
 
 ## Key design notes
 
-- **No lat/lng anywhere.** Search filters on the `neighborhood_area` text column
-  of the owner; no browser geolocation is used and no coordinates are stored.
+- **No browser GPS.** Distance is calculated between neighbourhood centroids stored
+  in the `neighborhoods` table (Haversine formula). No browser geolocation prompt,
+  no coordinates stored in listings or user profiles — only a human-readable
+  `neighborhood_area` label is ever exposed to other users.
 - **No payments table.** `price_per_day` and `deposit_cents` are display-only
   labels the lender sets as a suggestion; all money moves privately between
   the two people (classifieds-style).
